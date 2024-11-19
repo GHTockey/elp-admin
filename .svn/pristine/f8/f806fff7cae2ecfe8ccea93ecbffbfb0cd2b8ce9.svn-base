@@ -1,0 +1,322 @@
+<template>
+    <ContentWrap v-loading="loading">
+        <span class="text-size-xl font-700">{{ isEdit ? "编辑" : "添加" }}{{ tableData?.table.table_name_cn }}</span>
+        <el-divider />
+
+        <el-tabs v-model="activeTab" type="border-card">
+            <el-tab-pane v-for="(fields, tag) in groupedFields" :key="tag" :label="tag">
+                <el-form :model="tableDataForm" :rules="rules" ref="tableFormEl" label-width="180px">
+                    <template v-for="(item, key) in fields" :key="key">
+                        <el-form-item :label="item.vi_name" :prop="key" class=" w-[90%]">
+                            <!-- 日期选择器 -->
+                            <el-date-picker v-if="FieldTypeChecker.isDateField(item)" :type="item.my_column_type"
+                                :disabled="isEditable(item.auth)"
+                                :format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                                :value-format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                                v-model="tableDataForm[key]" class="input-width" />
+                            <!-- 头像上传 -->
+                            <el-upload v-else-if="FieldTypeChecker.isAvatarField(item)" class="avatar-uploader"
+                                :http-request="createUploadHandler(item.my_column_name)" :show-file-list="false"
+                                :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
+                                <img v-if="imageUrl" :src="imageUrl" class="avatar" />
+                                <el-icon v-else class="avatar-uploader-icon">
+                                    <Plus />
+                                </el-icon>
+                            </el-upload>
+                            <!-- switch 切换 -->
+                            <el-switch v-else-if="FieldTypeChecker.isSwitchField(item)" v-model="tableDataForm[key]"
+                                inline-prompt :active-text="item.relative_list?.[1]"
+                                :inactive-text="item.relative_list?.[0]" active-value="1" inactive-value="0" />
+                            <!-- 富文本 -->
+                            <Editor v-model="tableDataForm[key]" ref="editorRef"
+                                v-else-if="FieldTypeChecker.isRichTextField(item)" />
+                            <!-- 下拉框: 这个放最后 -->
+                            <el-select v-else-if="FieldTypeChecker.isSelectField(item)"
+                                :disabled="isEditable(item.auth)" :multiple="(!!item.relative_multiple)"
+                                v-model="tableDataForm[key]" placeholder="不限" clearable class="input-width">
+                                <el-option v-if="item.relative_list"
+                                    v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
+                                    :label="item2[1]" :value="item2[0]" />
+                            </el-select>
+                            <!-- 弹框选择 -->
+                            <!-- <template v-else-if="FieldTypeChecker.isPopupField(col)">
+                                <div class="flex w-42" @click="serchDialogVisible = true">
+                                    <el-input v-model="searchForm[key]" placeholder="请选择">
+                                        <template #append>
+                                            <el-button type="primary">选择</el-button>
+                                        </template>
+</el-input>
+</div>
+</template> -->
+                            <!-- 输入框 -->
+                            <el-input v-else :disabled="isEditable(item.auth)" v-model="tableDataForm[key]"
+                                class="input-width" />
+                            <!-- 描述 -->
+                            <span v-if="fields[key].vi_des" class="text-xs text-gray font-italic">
+                                {{ fields[key].vi_des }}
+                            </span>
+                        </el-form-item>
+                    </template>
+                </el-form>
+            </el-tab-pane>
+        </el-tabs>
+        <div class="pt5">
+            <el-button type="primary" @click="handleSubmit">提交</el-button>
+        </div>
+    </ContentWrap>
+</template>
+
+<script setup lang="ts">
+import { FieldTypeChecker, isRequired, formatValue, isEditable, fileToBinary, objToFormData, getFullImageUrl } from "@/utils";
+import { ref, computed } from 'vue';
+import { ContentWrap } from "@/components/ContentWrap";
+import request from '@/axios';
+import { useRoute, useRouter } from "vue-router";
+import { SUCCESS_CODE } from '@/constants';
+import { Plus } from '@element-plus/icons-vue';
+import { Editor } from '@/components/Editor'
+import {
+    ElButton,
+    ElForm,
+    ElMessage,
+    ElSelect,
+    ElOption,
+    ElFormItem,
+    ElInput,
+    ElDatePicker,
+    ElDivider,
+    ElUpload,
+    ElIcon,
+    ElTabs,
+    ElTabPane,
+    ElSwitch
+} from 'element-plus';
+import { editTableRowGetApi, editTableRowPostApi } from '@/api/table/tableApi';
+import { getFileUploadSliceGuidApi, uploadFileApi } from "@/api/other";
+
+const route = useRoute();
+const router = useRouter()
+
+let rules = ref({});
+
+// 表格添加时的表单数据
+const tableData = ref();
+const tableDataForm = ref({});
+
+// loading
+const loading = ref(false);
+
+const tableFormEl = ref(null); // 表格的ref 校验表单用
+
+// 是否是编辑，否则是添加
+const isEdit = ref(false);
+if (route.query.id) {
+    isEdit.value = true;
+}
+
+const activeTab = ref('0');
+
+getFormData()
+
+// 获取数据
+async function getFormData() {
+    loading.value = true
+    let res;
+    if (isEdit.value) {
+        let { tableName, id } = route.query
+        if (!tableName) return ElMessage.error('参数错误:tableName为空')
+        res = await editTableRowGetApi(tableName as string, id as string);
+        tableDataForm.value = res.data.target
+        formatValue(tableDataForm) // 将某些字段值转换为字符串以解决下拉选择框回显问题
+        // 头像
+        if (res.data.target.wx_image) {
+            imageUrl.value = getFullImageUrl(res.data.target.wx_image)
+        }
+    } else {
+        res = await request.get({ url: route.query.uri })
+    }
+    if (res.code == SUCCESS_CODE) {
+        tableData.value = res.data
+        initRules() // 初始化校验规则
+    } else {
+        ElMessage({
+            message: `失败: ${res.msg}`,
+            type: 'warning',
+        })
+    }
+    loading.value = false
+}
+
+// 表格命令：添加数据
+async function tableCMD_HandleAddSubmit() {
+    let url = tableData.value.form_action
+    url = url.replace(import.meta.env.VITE_API_BASE_PATH_URL, '')
+    let res = await request.post({ url, data: tableDataForm.value })
+    if (res.code == 0) {
+        ElMessage({
+            message: `${res.msg}`,
+            type: 'success',
+            duration: 1500,
+        })
+        router.back()
+    } else {
+        ElMessage({
+            message: `失败: ${res.msg}`,
+            type: 'warning',
+        })
+    }
+}
+
+// 初始化表单规则
+function initRules() {
+    for (const key in tableData.value?.form_fields) {
+        if (tableData.value?.form_fields.hasOwnProperty(key)) {
+            const field = tableData.value.form_fields[key];
+            if (isRequired(field)) {
+                rules.value[key] = [{ required: true, message: '此项必填', trigger: 'blur' }];
+            }
+        }
+    }
+    // console.log('表单规则初始化:' , rules.value, tableData.value);
+}
+
+// 提交表单
+async function handleSubmit() {
+    // console.log('tableDataForm.value', tableDataForm.value)
+    // console.log(tableFormEl.value[0].validate());
+    console.log('rules', rules)
+
+    // 批量验证表单
+    // taps 会把表单分成多个，通过 activeTab 来当下标来验证表单
+    for (let i = 0; i < Object.keys(groupedFields.value).length; i++) {
+        try {
+            await tableFormEl.value?.[i].validate()
+        } catch (error) {
+            activeTab.value = i.toString() // 切换到未通过验证的表单
+            return // 只要有一个表单未通过验证剩下的就不再验证了
+        }
+    }
+    // return
+    if (isEdit.value) { // 编辑提交
+        let { tableName, id } = route.query
+        tableDataForm.value.industry ? tableDataForm.value.industry = tableDataForm.value.industry.join(',') : '';
+        editTableRowPostApi(tableName as string, id as string, tableDataForm.value).then(res => {
+            if (res.code == SUCCESS_CODE) {
+                ElMessage({
+                    type: 'success',
+                    message: res.msg,
+                })
+                router.back()
+            }
+        })
+    } else { // 添加提交
+        tableCMD_HandleAddSubmit();
+    }
+}
+
+import type { UploadProps } from 'element-plus'
+
+const imageUrl = ref('')
+
+// 上传成功
+const handleAvatarSuccess: UploadProps['onSuccess'] = (
+    response,
+    uploadFile
+) => {
+    imageUrl.value = URL.createObjectURL(uploadFile.raw!)
+}
+
+// 上传前
+const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
+    if (!(rawFile.type === 'image/jpeg' || rawFile.type === 'image/png')) {
+        ElMessage.error('头像图片必须是 JPG 或 PNG 格式!')
+        return false
+    } else if (rawFile.size / 1024 / 1024 > 2) {
+        ElMessage.error('头像图片大小不能超过 2MB!')
+        return false
+    }
+    return true
+}
+
+// 上传文件
+const createUploadHandler = (fieldName: string) => {
+    const uploadAvatar: UploadProps['httpRequest'] = async ({ file, onSuccess, onError }) => {
+        try {
+            const { data: { fileUploadSliceGuid } } = await getFileUploadSliceGuidApi();
+            const fileContent: ArrayBuffer = await fileToBinary(file);
+            let data = objToFormData({
+                fileName: file.name,
+                fileUploadSliceGuid,
+                fileSize: file.size,
+                table_name: tableData.value.table_name,
+                field_name: fieldName,
+                resize_width: 0,
+                fileContent: new Blob([fileContent], { type: file.type }),
+            })
+            const response = await uploadFileApi(data);
+            if (response.code === SUCCESS_CODE) {
+                onSuccess(response.data);
+                imageUrl.value = response.data.file;
+                tableDataForm.value[fieldName] = response.data.file
+            } else {
+                onError(new Error(response.msg));
+            }
+        } catch (error) {
+            onError(error);
+        }
+    };
+    return uploadAvatar;
+}
+
+// 计算属性：将表单字段按照编辑标签分组
+const groupedFields = computed(() => {
+    const groups = {};
+    if (tableData.value && tableData.value.form_fields) {
+        // 遍历所有表单字段
+        for (const [key, field] of Object.entries(tableData.value.form_fields)) {
+            // 获取字段的编辑标签，如果没有则默认为'其他'
+            // const tag = field.edit_tag || '其它';
+            const tag = field.edit_tag || '基础';
+            // 如果该标签的分组还不存在，则创建一个新的对象
+            if (!groups[tag]) {
+                groups[tag] = {};
+            }
+            // 将字段添加到对应的分组中
+            groups[tag][key] = field;
+        }
+    }
+    // 返回分组后的字段
+    return groups;
+});
+</script>
+
+<style scoped>
+.avatar-uploader .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+}
+</style>
+
+<style>
+.avatar-uploader .el-upload {
+    border: 1px dashed var(--el-border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: var(--el-transition-duration-fast);
+}
+
+.avatar-uploader .el-upload:hover {
+    border-color: var(--el-color-primary);
+}
+
+.el-icon.avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 178px;
+    height: 178px;
+    text-align: center;
+}
+</style>

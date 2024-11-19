@@ -1,0 +1,14 @@
+import request from '@/axios'
+import { TableData } from './Table'
+import axios, { AxiosResponse } from "axios";
+
+
+
+// 获取table 数据
+// export const getTableDataApi = (tableName: string): Promise<IResponse<TableData>> => {
+//     return request.get({ url: `/Admin/Table/table/${tableName}`, params: { '__API_TMP_TEST_119__': 1 } })
+// }
+export const getTableDataApi = (tableName: string): AxiosResponse<TableData> => {
+    // return request.get({ url: `/Admin/Table/table/${tableName}`, params: { '__API_TMP_TEST_119__': 1 } })
+    return axios.get(`https://a.plant360.cn/element_admin/Admin/Table/table/${tableName}`, { params: { '__API_TMP_TEST_119__': 1 } })
+}

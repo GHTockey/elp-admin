@@ -1,0 +1,536 @@
+"navs": [
+    {
+        "id": 1,
+        "table_name_cn": "动态路由西门子",
+        "pid": 0,
+        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/321e1e24d286409137cabe2b47a74db5.s8540.svg",
+        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/321e1e24d286409137cabe2b47a74db5.s8540.svg",
+        "sub_list": [
+            {
+                "id": 2,
+                "table_name_cn": "数据分析",
+                "pid": 1,
+                "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/321e1e24d286409137cabe2b47a74db5.s8540.svg",
+                "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/321e1e24d286409137cabe2b47a74db5.s8540.svg",
+                "sub_list": [
+                    {
+                        "id": 372,
+                        "auth": null,
+                        "sort": 10,
+                        "nav_group_top": "西门子",
+                        "nav_group": "数据分析",
+                        "table_name_cn": "数据概览",
+                        "table_name": "t_user",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Datacenter/index.html",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/321e1e24d286409137cabe2b47a74db5.s8540.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/321e1e24d286409137cabe2b47a74db5.s8540.svg",
+                        "page_type": "page_list",
+                        "pid": 2,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 371,
+                        "auth": null,
+                        "sort": 11,
+                        "nav_group_top": "西门子",
+                        "nav_group": "数据分析",
+                        "table_name_cn": "内容分析",
+                        "table_name": "t_user",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Datacenter/ctn.html",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/321e1e24d286409137cabe2b47a74db5.s8540.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/321e1e24d286409137cabe2b47a74db5.s8540.svg",
+                        "page_type": "page_list",
+                        "pid": 2,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 374,
+                        "auth": null,
+                        "sort": 12,
+                        "nav_group_top": "西门子",
+                        "nav_group": "数据分析",
+                        "table_name_cn": "用户画像",
+                        "table_name": "t_user",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Datacenter/user.html",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": null,
+                        "icon_normal": null,
+                        "page_type": "page_list",
+                        "pid": 2,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 373,
+                        "auth": null,
+                        "sort": 13,
+                        "nav_group_top": "西门子",
+                        "nav_group": "数据分析",
+                        "table_name_cn": "活动分析",
+                        "table_name": "t_user",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Datacenter/activity.html",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": null,
+                        "icon_normal": null,
+                        "page_type": "page_list",
+                        "pid": 2,
+                        "sub_list": []
+                    }
+                ]
+            },
+            {
+                "id": 3,
+                "table_name_cn": "数据管理",
+                "pid": 1,
+                "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                "sub_list": [
+                    {
+                        "id": 355,
+                        "auth": null,
+                        "sort": 14,
+                        "nav_group_top": "西门子",
+                        "nav_group": "数据管理",
+                        "table_name_cn": "原始行为数据",
+                        "table_name": "sum_article_action",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/sum_article_action",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                        "page_type": "page_list",
+                        "pid": 3,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 363,
+                        "auth": null,
+                        "sort": 15,
+                        "nav_group_top": "西门子",
+                        "nav_group": "数据管理",
+                        "table_name_cn": "原始内容数据",
+                        "table_name": "t_article",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_article",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                        "page_type": "page_list",
+                        "pid": 3,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 368,
+                        "auth": null,
+                        "sort": 18,
+                        "nav_group_top": "西门子",
+                        "nav_group": "数据管理",
+                        "table_name_cn": "用户原始数据",
+                        "table_name": "t_user_init",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_user_init",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                        "page_type": "page_list",
+                        "pid": 3,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 381,
+                        "auth": null,
+                        "sort": 28,
+                        "nav_group_top": "西门子",
+                        "nav_group": "数据管理",
+                        "table_name_cn": "渠道管理",
+                        "table_name": "tb_external_channel",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/tb_external_channel",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/316abe9a83b182513ddd49c9a12672a2.s2136.svg",
+                        "page_type": "page_list",
+                        "pid": 3,
+                        "sub_list": []
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "table_name_cn": "用户标签",
+                "pid": 1,
+                "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                "sub_list": [
+                    {
+                        "id": 390,
+                        "auth": null,
+                        "sort": 16,
+                        "nav_group_top": "西门子",
+                        "nav_group": "用户标签",
+                        "table_name_cn": "用户标签二级分类",
+                        "table_name": "t_user_tag_group2",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_user_tag_group2",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                        "page_type": "page_list",
+                        "pid": 4,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 389,
+                        "auth": null,
+                        "sort": 17,
+                        "nav_group_top": "西门子",
+                        "nav_group": "用户标签",
+                        "table_name_cn": "用户标签一级分类",
+                        "table_name": "t_user_tag_group1",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_user_tag_group1",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                        "page_type": "page_list",
+                        "pid": 4,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 388,
+                        "auth": null,
+                        "sort": 19,
+                        "nav_group_top": "西门子",
+                        "nav_group": "用户标签",
+                        "table_name_cn": "用户标签",
+                        "table_name": "t_user_tag",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_user_tag",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                        "page_type": "page_list",
+                        "pid": 4,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 391,
+                        "auth": null,
+                        "sort": 22,
+                        "nav_group_top": "西门子",
+                        "nav_group": "用户标签",
+                        "table_name_cn": "自定义用户标签",
+                        "table_name": "t_user_tag_custom",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_user_tag_custom",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/af3e0d93cc6d531f7abfb873eba5945c.s2264.svg",
+                        "page_type": "page_list",
+                        "pid": 4,
+                        "sub_list": []
+                    }
+                ]
+            },
+            {
+                "id": 5,
+                "table_name_cn": "用户管理",
+                "pid": 1,
+                "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/67ba1c4e08933571b40d483da6014eb5.s7828.svg",
+                "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/67ba1c4e08933571b40d483da6014eb5.s7828.svg",
+                "sub_list": [
+                    {
+                        "id": 353,
+                        "auth": null,
+                        "sort": 20,
+                        "nav_group_top": "西门子",
+                        "nav_group": "用户管理",
+                        "table_name_cn": "用户",
+                        "table_name": "t_user",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_user",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/67ba1c4e08933571b40d483da6014eb5.s7828.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/67ba1c4e08933571b40d483da6014eb5.s7828.svg",
+                        "page_type": "page_list",
+                        "pid": 5,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 382,
+                        "auth": null,
+                        "sort": 23,
+                        "nav_group_top": "西门子",
+                        "nav_group": "用户管理",
+                        "table_name_cn": "用户分组",
+                        "table_name": "t_user_group",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_user_group",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/67ba1c4e08933571b40d483da6014eb5.s7828.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/67ba1c4e08933571b40d483da6014eb5.s7828.svg",
+                        "page_type": "page_list",
+                        "pid": 5,
+                        "sub_list": []
+                    }
+                ]
+            },
+            {
+                "id": 6,
+                "table_name_cn": "设置",
+                "pid": 1,
+                "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/089fe7dc49836db187e6477fedddad63.s2827.svg",
+                "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/089fe7dc49836db187e6477fedddad63.s2827.svg",
+                "sub_list": [
+                    {
+                        "id": 392,
+                        "auth": null,
+                        "sort": 24,
+                        "nav_group_top": "西门子",
+                        "nav_group": "设置",
+                        "table_name_cn": "接口授权管理",
+                        "table_name": "t_app",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_app",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/089fe7dc49836db187e6477fedddad63.s2827.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/089fe7dc49836db187e6477fedddad63.s2827.svg",
+                        "page_type": "page_list",
+                        "pid": 6,
+                        "sub_list": []
+                    },
+                    {
+                        "id": 309,
+                        "auth": null,
+                        "sort": 27,
+                        "nav_group_top": "西门子",
+                        "nav_group": "设置",
+                        "table_name_cn": "后台账号",
+                        "table_name": "sys_admin",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/sys_admin",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/089fe7dc49836db187e6477fedddad63.s2827.svg",
+                        "icon_normal": "https://a.plant360.cn/uploads/siemens_fa_markting/res_v2/089fe7dc49836db187e6477fedddad63.s2827.svg",
+                        "page_type": "page_list",
+                        "pid": 6,
+                        "sub_list": []
+                    }
+                ]
+            },
+            {
+                "id": 7,
+                "table_name_cn": "Demo用户",
+                "pid": 1,
+                "icon_normal": null,
+                "icon_active": null,
+                "sub_list": [
+                    {
+                        "id": 375,
+                        "auth": null,
+                        "sort": 25,
+                        "nav_group_top": "西门子",
+                        "nav_group": "Demo用户",
+                        "table_name_cn": "Demo用户",
+                        "table_name": "t_user_h5_demo",
+                        "manage_uri": "https://a.plant360.cn/element_admin/Admin/Table/table/t_user_h5_demo",
+                        "auth_admin_id": null,
+                        "auth_admin_role_id": null,
+                        "icon_vue": null,
+                        "icon_active": null,
+                        "icon_normal": null,
+                        "page_type": "page_list",
+                        "pid": 7,
+                        "sub_list": []
+                    }
+                ]
+            }
+        ]
+    }
+],
+
+
+
+routerExample: [
+    {
+        "children": [
+            {
+                "component": "support/view/notice/list",
+                "id": "1659828341531791362",
+                "meta": {
+                    "hidden": false,
+                    "icon": "Menu",
+                    "title": "通知公告"
+                },
+                "name": "notice",
+                "parentId": "1659753506533371905",
+                "path": "notice"
+            },
+            {
+                "component": "support/view/notice/noticeViewList",
+                "id": "1669315442937753602",
+                "meta": {
+                    "hidden": true,
+                    "title": "通知公告列表"
+                },
+                "name": "noticeViewList",
+                "parentId": "1659828341531791362",
+                "path": "noticeViewList"
+            },
+            {
+                "component": "support/view/notice/noticeView",
+                "id": "1669258432217100289",
+                "meta": {
+                    "hidden": true,
+                    "title": "通知公告查看"
+                },
+                "name": "noticeView",
+                "parentId": "1659828341531791362",
+                "path": "noticeView"
+            },
+            {
+                "component": "support/view/serialNo/list",
+                "id": "1663468238868094977",
+                "meta": {
+                    "hidden": false,
+                    "icon": "Menu",
+                    "title": "流水号"
+                },
+                "name": "serialNo",
+                "parentId": "1659753506533371905",
+                "path": "serialNo"
+            },
+            {
+                "component": "support/view/contentTemplate/list",
+                "id": "1663879338537275394",
+                "meta": {
+                    "hidden": false,
+                    "icon": "DocumentCopy",
+                    "title": "内容模板"
+                },
+                "name": "contentTemplate",
+                "parentId": "1659753506533371905",
+                "path": "contentTemplate"
+            },
+            {
+                "component": "support/view/portlet/list",
+                "id": "1664239734330826754",
+                "meta": {
+                    "hidden": false,
+                    "icon": "Cellphone",
+                    "title": "组件"
+                },
+                "name": "portlet",
+                "parentId": "1659753506533371905",
+                "path": "portlet"
+            },
+            {
+                "component": "support/view/portletParam/list",
+                "id": "1664425644594868226",
+                "meta": {
+                    "hidden": true,
+                    "icon": "Memo",
+                    "title": "组件参数"
+                },
+                "name": "portletParam",
+                "parentId": "1659753506533371905",
+                "path": "portletParam"
+            },
+            {
+                "component": "support/view/desktopTemplate/list",
+                "id": "1664536173833396226",
+                "meta": {
+                    "hidden": false,
+                    "icon": "CreditCard",
+                    "title": "桌面模板"
+                },
+                "name": "desktopTemplate",
+                "parentId": "1659753506533371905",
+                "path": "desktopTemplate"
+            }
+        ],
+        "component": "#",
+        "id": "1659753506533371905",
+        "meta": {
+            "hidden": false,
+            "icon": "Grid",
+            "title": "业务支撑"
+        },
+        "name": "support",
+        "parentId": "1",
+        "path": "/support"
+    },
+    {
+        "children": [
+            {
+                "component": "businessflow/view/navigate/index",
+                "id": "1676037953914175489",
+                "meta": {
+                    "hidden": false,
+                    "icon": "Grid",
+                    "title": "流程导航"
+                },
+                "name": "navigate",
+                "parentId": "1675775205917675521",
+                "path": "navigate"
+            }
+        ],
+        "component": "#",
+        "id": "1675775205917675521",
+        "meta": {
+            "hidden": false,
+            "icon": "Grid",
+            "title": "业务流程"
+        },
+        "name": "businessflow",
+        "parentId": "1",
+        "path": "/businessflow"
+    },
+    {
+        "children": [
+            {
+                "component": "notification/view/systemMessage/list",
+                "id": "1662266586756558850",
+                "meta": {
+                    "hidden": false,
+                    "icon": "ChatLineRound",
+                    "title": "系统消息"
+                },
+                "name": "systemMessage",
+                "parentId": "1662266360884899842",
+                "path": "systemMessage"
+            }
+        ],
+        "component": "#",
+        "id": "1662266360884899842",
+        "meta": {
+            "hidden": false,
+            "icon": "Warning",
+            "title": "系统通知"
+        },
+        "name": "notification",
+        "parentId": "1",
+        "path": "/notification"
+    }
+]

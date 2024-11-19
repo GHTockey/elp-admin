@@ -1,0 +1,188 @@
+<template>
+    <ContentWrap>
+        <span class="text-size-xl font-700">{{isEdit?"编辑":"添加"}}{{ tableData?.table.table_name_cn }}</span>
+        <el-divider />
+
+        <el-form :model="tableDataForm" :rules="rules" ref="tableFormEl" label-width="120px">
+            <template v-for="(item, key) in tableData?.form_fields" :key="key">
+                <!-- 日期选择器 -->
+                <el-form-item v-if="isDateField(item)" :label="item.vi_name" :prop="key">
+                    <el-date-picker :type="item.my_column_type" :disabled="isEditable(item.auth)"
+                        :format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                        :value-format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                        v-model="tableDataForm[key]" class="input-width" />
+                </el-form-item>
+                <!-- 输入框 -->
+                <el-form-item :label="item.vi_name" v-else-if="isInputField(item)" :prop="key">
+                    <el-input :disabled="isEditable(item.auth)" v-model="tableDataForm[key]" placeholder="请输入"
+                        class="input-width" />
+                </el-form-item>
+                <!-- 下拉框 -->
+                <el-form-item :label="item.vi_name" v-else-if="isSelectField(item)" :prop="key">
+                    <el-select :disabled="isEditable(item.auth)" v-model="tableDataForm[key]" placeholder="不限"
+                        clearable class="input-width">
+                        <el-option v-if="item.relative_list"
+                            v-for="(item2, index) in Object.entries(item.relative_list)" :key="index" :label="item2[1]"
+                            :value="item2[0]" />
+                    </el-select>
+                </el-form-item>
+                <!-- 未匹配任何 -->
+                <el-form-item v-else :prop="key" :label="item.vi_name">
+                    <el-input :disabled="isEditable(item.auth)" v-model="tableDataForm[key]" :placeholder="'请输入'"
+                        class="input-width" />
+                </el-form-item>
+            </template>
+            <el-form-item>
+                <el-button type="primary" @click="handleSubmit">提交</el-button>
+            </el-form-item>
+        </el-form>
+
+    </ContentWrap>
+
+</template>
+
+<script setup lang="ts">
+import { isDateField, isInputField, isSelectField, formatValue, isEditable } from "@/utils";
+import { ref } from 'vue';
+import { ContentWrap } from "@/components/ContentWrap";
+import request from '@/axios';
+import { useRoute,useRouter } from "vue-router";
+import { SUCCESS_CODE } from '@/constants';
+import {
+    ElButton,
+    ElForm,
+    ElMessage,
+    ElSelect,
+    ElOption,
+    ElFormItem,
+    ElInput,
+    ElDatePicker,
+    ElTable, ElTableColumn, ElPagination, ElDialog, ElAvatar,
+    ElDivider
+} from 'element-plus';
+import { editTableRowGetApi, editTableRowPostApi } from '@/api/table/tableApi';
+
+const route = useRoute();
+const router = useRouter()
+
+let rules = {};
+
+// 表格添加时的表单数据
+const tableData = ref();
+const tableDataForm = ref({});
+
+const tableFormEl = ref(null); // 表格的ref 校验表单用
+
+// 是否是编辑，否则是添加
+const isEdit = ref(false);
+if (route.query.id) {
+    isEdit.value = true;
+}
+
+getFormData()
+
+
+// 获取数据
+async function getFormData() {
+    let res;
+    if (isEdit.value) {
+        let { tableName, id } = route.query
+        res = await editTableRowGetApi(tableName as string, id as string);
+        console.log('res', res);
+        tableDataForm.value = res.data.target
+        formatValue(tableDataForm) // 将某些字段值转换为字符串以解决下拉选择框回显问题
+    } else {
+        // console.log('route',route.query.uri)
+        res = await request.get({ url: route.query.uri })
+        // console.log('res', res)
+    }
+    if (res.code == SUCCESS_CODE) {
+        tableData.value = res.data
+        initRules() // 初始化校验规则
+    } else {
+        ElMessage({
+            message: `失败: ${res.msg}`,
+            type: 'warning',
+        })
+    }
+
+}
+
+// 表格命令：添加数据
+async function tableCMD_HandleAddSubmit() {
+    // console.log('tableAddDataForm.value',tableAddDataForm.value)
+    // console.log('env.VITE_API_BASE_PATH_URL', import.meta.env.VITE_API_BASE_PATH_URL)
+
+    // 处理url 将url中的'https://a.plant360.cn/element_admin/Admin'替换为 ''
+    let url = tableData.value.form_action
+    url = url.replace(import.meta.env.VITE_API_BASE_PATH_URL, '')
+    let res = await request.post({ url, data: tableDataForm.value })
+    // console.log('res', res)
+    if (res.code == 0) {
+        ElMessage({
+            message: `${res.msg}`,
+            type: 'success',
+            duration: 1500,
+        })
+
+    } else {
+        ElMessage({
+            message: `失败: ${res.msg}`,
+            type: 'warning',
+        })
+    }
+}
+
+
+function initRules() {
+    rules = {};
+    for (const key in tableData?.form_fields) {
+        if (tableData?.form_fields.hasOwnProperty(key)) {
+            rules[key] = [{ required: true, message: '此字段必填', trigger: 'blur' }];
+        }
+    }
+};
+
+
+// 提交表单
+function handleSubmit() {
+    // console.log('tableAddFormEl', tableAddFormEl.value.validate)
+    // 校验表单
+    tableFormEl.value.validate((valid) => {
+        if (valid) {
+            // 表单验证通过
+            if (isEdit.value) { // 编辑提交
+                let { tableName, id } = route.query
+                // 将表单数据中的 app_id 转为 number
+                // tableDataForm.value.app_id ? tableDataForm.value.app_id = Number(tableDataForm.value.app_id) : ''
+                // console.log('tableDataForm', tableDataForm.value);
+                editTableRowPostApi(tableName as string, id as string, tableDataForm.value).then(res => {
+                    // console.log('res',res)
+                    if (res.code == SUCCESS_CODE) {
+                        ElMessage({
+                            type: 'success',
+                            message: res.msg,
+                        })
+                        // 返回上一页
+                        router.back()
+                    }
+                })
+            } else { // 添加提交
+                tableCMD_HandleAddSubmit();
+            }
+
+        } else {
+            console.log('表单验证失败');
+            return false;
+        }
+    });
+}
+</script>
+
+
+<!-- <style scoped>
+.input-width {
+    width: 100%;
+    max-width: 400px;
+}
+</style> -->

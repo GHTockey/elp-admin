@@ -1,0 +1,98 @@
+<template>
+    <ContentWrap>
+        <span class="text-size-xl font-700">{{ lookDataFields?.table?.table_name_cn }}</span>
+        <el-divider />
+
+        <el-form :model="currentRow" label-width="150px">
+            <el-form-item v-for="(field, key) in lookDataFields.form_fields" :key="key" :label="field.vi_name">
+                <!-- 日期选择器 -->
+                <template v-if="FieldTypeChecker.isDateField(field)">
+                    <el-date-picker :type="field.my_column_type" disabled
+                        :format="`YYYY-MM-DD ${field.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                        :value-format="`YYYY-MM-DD ${field.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                        v-model="currentRow[field.my_column_name]" />
+                </template>
+                <!-- 富文本 -->
+                <Editor v-else-if="FieldTypeChecker.isRichTextField(field)"
+                    v-model="currentRow[field.my_column_name]"></Editor>
+                <!-- 下拉选择框 -->
+                <template v-else-if="FieldTypeChecker.isSelectField(field)">
+                    <el-select disabled class="w-50!" v-model="currentRow[field.my_column_name]" placeholder="请选择"
+                        clearable>
+                        <el-option v-if="field.relative_list"
+                            v-for="(item, index) in Object.entries(field.relative_list)" :key="index"
+                            :label="'' + item[1]" :value="'' + item[0]" />
+                    </el-select>
+                </template>
+                <!-- 输入框 -->
+                <template v-else-if="FieldTypeChecker.isInputField(field)">
+                    <el-input disabled v-model="currentRow[key]" placeholder="请输入" />
+                </template>
+                <!-- 未匹配的字段 -->
+                <el-input v-else disabled v-model="currentRow[field.my_column_name]" />
+            </el-form-item>
+        </el-form>
+    </ContentWrap>
+</template>
+
+<script setup lang="ts">
+import { ContentWrap } from "@/components/ContentWrap";
+import { formatValue, FieldTypeChecker } from "@/utils";
+import { ref } from 'vue';
+import { ElForm, ElFormItem, ElInput, ElDatePicker, ElSelect, ElOption, ElDivider } from "element-plus";
+import { getTableRowDatailApi } from "@/api/table/tableApi";
+import { useRoute } from 'vue-router'
+import { Editor } from '@/components/Editor'
+
+// import { useOtherStore } from "@/store/modules/other";
+
+
+const route = useRoute()
+const currentRow = ref({});
+// const otherStore = useOtherStore()
+
+
+// 查看某项数据显示的字段数据
+const lookDataFields = ref({});
+
+
+// currentRow.value = otherStore.getTableRowData
+
+
+// console.log('route.query', route.query)
+getLookData();
+
+async function getLookData() {
+    let { tableName, id } = route.query;
+
+    let res = await getTableRowDatailApi(tableName as string, id as string);
+    lookDataFields.value = res.data;
+    currentRow.value = res.data.target;
+
+    // 将某些属性值转为字符串以解决下拉选择框回显问题
+    formatValue(currentRow)
+}
+
+</script>
+
+<style scoped>
+.custom-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.custom-form-item {
+    display: flex;
+    align-items: center;
+}
+
+.custom-form-item .el-form-item__label {
+    flex: 0 0 150px;
+    /* 固定宽度 */
+}
+
+.custom-form-item .el-form-item__content {
+    flex: 1;
+    /* 自适应宽度 */
+}
+</style>

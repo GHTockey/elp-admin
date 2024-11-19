@@ -1,0 +1,67 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useAppStore } from '@/store/modules/app'
+import { ConfigGlobal } from '@/components/ConfigGlobal'
+import { useDesign } from '@/hooks/web/useDesign'
+
+import { getNavsApi } from "@/api/other";
+import SacManage from '@/utils/SacManage';
+import { usePermissionStore } from '@/store/modules/permission';
+import { storeToRefs } from 'pinia';
+
+const { getPrefixCls } = useDesign();
+
+const prefixCls = getPrefixCls('app');
+
+const appStore = useAppStore();
+
+const currentSize = computed(() => appStore.getCurrentSize);
+
+const greyMode = computed(() => appStore.getGreyMode);
+
+appStore.initTheme();
+
+
+
+// ; (async () => {
+//   // 这里调用是为了提前获取 admin 数据
+//   let { data } = await getNavsApi();
+//   // console.log(data);
+//   const permissionStore = usePermissionStore();
+//   const { admin } = storeToRefs(permissionStore);
+//   admin.value = data.admin;
+//   SacManage.admin = permissionStore.admin;
+//   SacManage._adminRoleTableList = permissionStore.admin_role_table_list;
+// })();
+</script>
+
+<template>
+  <ConfigGlobal :size="currentSize">
+    <RouterView :class="greyMode ? `${prefixCls}-grey-mode` : ''" />
+  </ConfigGlobal>
+</template>
+
+<style lang="less">
+@prefix-cls: ~'@{namespace}-app';
+
+.size {
+  width: 100%;
+  height: 100%;
+}
+
+html,
+body {
+  padding: 0 !important;
+  margin: 0;
+  overflow: hidden;
+  .size;
+
+  #app {
+    .size;
+  }
+}
+
+.@{prefix-cls}-grey-mode {
+  filter: grayscale(100%);
+}
+</style>

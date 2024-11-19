@@ -1,0 +1,816 @@
+<template>
+    <div>
+        <!-- <div class=" bg-blue p-3 px-10 rounded-10">
+            <h3>临时操作面板</h3>
+            <p>tableName：{{ $route.params.tableName }}</p>
+            <p>params 参数：{{ $route.params }}</p>
+            <p>query 参数：{{ $route.query }}</p>
+            <p>mate 参数: {{ $route.meta }}</p>
+            <el-button type="info" @click.prevent="getTableData">异步获取</el-button>
+        </div> -->
+
+
+        <ContentWrap v-loading="loading">
+            <span class="text-size-xl font-700">{{ tableData.table?.table_name_cn }}</span>
+            <el-divider />
+
+            <!-- 搜索表单 -->
+            <el-form :model="searchForm" inline>
+                <el-form-item v-for="(col, key) in tableData.search_cols" :key="key" :label="col.vi_name">
+                    <!-- 日期选择器 -->
+                    <template v-if="isDateField(col)">
+                        <el-date-picker :type="'datetimerange'"
+                            :format="`YYYY-MM-DD ${col.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                            :value-format="`YYYY-MM-DD ${col.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                            range-separator="-" start-placeholder="开始时间" end-placeholder="结束时间"
+                            v-model="searchForm[key]" />
+                    </template>
+                    <!-- 下拉选择框 -->
+                    <template v-else-if="isSelectField(col)">
+                        <el-form-item>
+                            <el-select class="w-26!" v-model="searchForm[key]" placeholder="不限" clearable>
+                                <!-- relative_list 为对象，遍历使用 Object.entries() 方法 -->
+                                <el-option v-if="col.relative_list"
+                                    v-for="(item, index) in Object.entries(col.relative_list)" :key="item[0]"
+                                    :label="item[1]" :value="item[0]" />
+                            </el-select>
+                        </el-form-item>
+                    </template>
+                    <!-- 输入框 -->
+                    <template v-else-if="isInputField(col)">
+                        <el-input v-model="searchForm[key]" placeholder="请输入" />
+                    </template>
+                    <!-- 弹框选择 -->
+                    <template v-else-if="isPopupField(col)">
+                        <div class="flex w-42" @click="serchDialogVisible = true">
+                            <el-input v-model="searchForm[key]" placeholder="请选择">
+                                <template #append>
+                                    <el-button type="primary">选择</el-button>
+                                </template>
+                            </el-input>
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <el-input v-model="searchForm[key]" placeholder="请输入" />
+                    </template>
+                </el-form-item>
+
+                <el-form-item>
+                    <el-button type="primary" @click="handleSearch">搜索</el-button>
+                    <el-button @click="handleReset">重置</el-button>
+                </el-form-item>
+            </el-form>
+
+            <!-- 表格cmd操作按钮 -->
+            <el-row>
+                <el-col :span="24" class="flex ">
+                    <template v-if="tableData.table_cmds.length">
+                        <template v-for="(item, index) in tableData.table_cmds" :key="index">
+                            <!-- 批量删除 -->
+                            <ElButton v-if="item.cmd_type == 1" type="primary" @click="tableCMD_HandleDeleteAll(item)">
+                                {{ item.cmd_cn }}-{{ item.cmd_type }}
+                            </ElButton>
+                            <!-- 添加数据 -->
+                            <ElButton v-else-if="item.cmd_type == 2" type="primary" @click="tableCMD_HandleAddCB(item)">
+                                {{ item.cmd_cn }}-{{ item.cmd_type }}
+                            </ElButton>
+                            <!-- 导出Exel -->
+                            <ElButton v-else-if="item.cmd_type == 7" type="primary" @click="exportExcel">
+                                {{ item.cmd_cn }}-{{ item.cmd_type }}
+                            </ElButton>
+
+
+                            <!-- temp btn -->
+                            <ElButton v-else type="">{{ item.cmd_cn }}-{{ item.cmd_type }}</ElButton>
+                        </template>
+
+                    </template>
+                </el-col>
+            </el-row>
+
+            <!-- 表格  通过 el-table-column 动态生成表格列，并且在每一列中动态绑定对应的行数据 -->
+            <!-- 动态生成表格列：使用 v-for 循环遍历 tableData.cols_show，并动态生成 el-table-column。
+                绑定列属性：使用 :prop="item.my_column_name" 动态绑定列的属性名称，这样每一列都会自动对应到 rows 中的相应字段。
+                显示数据：在 el-table-column 的 default 插槽中，通过 scope.row[item.my_column_name] 动态获取并显示每一行的对应列数据。 -->
+            <el-table v-if="tableData.rows.length" :data="tableData.rows" style="width: 100%" max-height="720"
+                @selection-change="handleSelectionChange">
+                <!-- 复选框:根据tableData.table_cmds里是否有cmd_type == 1的 进行条件渲染 -->
+                <el-table-column type="selection" width="50"
+                    v-if="tableData.table_cmds.some(item => item.cmd_type == 1)" />
+                <el-table-column v-for="(item, index) in Object.values(tableData.cols_show)" :key="index"
+                    :prop="item.my_column_name" :label="item.vi_name">
+                    <template #default="scope">
+                        <div style="display: flex; align-items: center">
+                            <!-- 行为类型 -->
+                            <!-- scope.row[item.my_column_name] ==> id值, 拼接字段到tableData中取值 -->
+                            <span v-if="item.my_column_name == 'action_type'">{{
+                                tableData.cols_show[item.my_column_name].relative_list[scope.row[item.my_column_name]]
+                                }}</span>
+                            <!-- 所属栏目 -->
+                            <span v-else-if="item.my_column_name == 'article_category_id'">{{
+                                tableData.cols_show[item.my_column_name].relative_list[scope.row[item.my_column_name]]
+                                }}</span>
+                            <!-- 来源 -->
+                            <span v-else-if="item.my_column_name == 'app_id'">{{
+                                tableData.cols_show[item.my_column_name].relative_list[scope.row[item.my_column_name]]
+                                }}</span>
+                            <!-- 微信头像 -->
+                            <el-avatar v-else-if="item.my_column_name == 'wx_image'" :size="50"
+                                :src="scope.row[item.my_column_name]" />
+                            <span v-else style="margin-left: 10px">{{ scope.row[item.my_column_name] }}</span>
+                        </div>
+                    </template>
+                </el-table-column>
+                <!-- 操作栏 -->
+                <el-table-column fixed="right" label="操作" width="200">
+                    <template #default="scope">
+                        <el-button :size="'small'" type="primary" @click="handleView(scope.row)">查看</el-button>
+                        <el-button :size="'small'" type="warning" @click="handleEdit(scope.row)">编辑</el-button>
+                        <el-button :size="'small'" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <!-- 分页 -->
+            <div class="demo-pagination-block mt-8">
+                <el-pagination v-model:current-page="currentPage" v-model:page-size="per_page"
+                    :page-sizes="[10, 50, 100, 200]" background layout="total, sizes, prev, pager, next, jumper"
+                    :total="tableData.total_rows" @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange" />
+            </div>
+        </ContentWrap>
+
+
+
+        <!-- 查看详情弹出框 -->
+        <el-dialog v-model="lookDialogVisible" class="font-700" :title="'查看' + tableData?.table?.table_name_cn">
+            <div class="field-container font-normal">
+                <div v-for="(field, key) in lookDataFields.form_fields" :key="key" class="field-item">
+                    <span class="field-label">{{ field.vi_name }}:</span>
+                    <span class="field-value">
+                        <!-- 日期选择器 -->
+                        <template v-if="isDateField(field)">
+                            {{ formatDate(currentRow[field.my_column_name], field.my_column_type) }}
+                        </template>
+                        <!-- 下拉选择框 -->
+                        <template v-else-if="isSelectField(field)">
+                            {{ getSelectLabel(field, currentRow[field.my_column_name]) }}
+                        </template>
+                        <!-- 输入框 -->
+                        <template v-else-if="isInputField(field)">
+                            {{ currentRow[key] }}
+                        </template>
+                        <!-- 未匹配的字段 -->
+                        <template v-else>
+                            {{ currentRow[field.my_column_name] }}
+                        </template>
+                    </span>
+                </div>
+            </div>
+        </el-dialog>
+
+
+        <!-- 编辑弹出框 -->
+        <el-dialog v-model="editDialogVisible" title="编辑">
+            <el-form :model="currentRow" label-width="130px">
+                <el-form-item v-for="(field, key) in editDataForm.form_fields" :key="key" :label="field.vi_name">
+                    <!-- 日期选择器 -->
+                    <template v-if="isDateField(field)">
+                        <el-date-picker :type="field.my_column_type" :disabled="isEditable(field.auth)"
+                            :format="`YYYY-MM-DD ${field.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                            :value-format="`YYYY-MM-DD ${field.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                            v-model="currentRow[field.my_column_name]" />
+                    </template>
+                    <!-- 下拉选择框 -->
+                    <template v-else-if="isSelectField(field)">
+                        <el-select :disabled="isEditable(field.auth)" class="w-26!"
+                            v-model="currentRow[field.my_column_name]" placeholder="请选择" clearable>
+                            <el-option v-if="field.relative_list"
+                                v-for="(item, index) in Object.entries(field.relative_list)" :key="index"
+                                :label="'' + item[1]" :value="'' + item[0]" />
+                        </el-select>
+                    </template>
+                    <!-- 输入框 -->
+                    <template v-else-if="isInputField(field)">
+                        <el-input :disabled="isEditable(field.auth)" v-model="currentRow[key]" placeholder="请输入" />
+                    </template>
+                    <!-- 未匹配的字段 -->
+                    <el-input :disabled="isEditable(field.auth)" v-else v-model="currentRow[field.my_column_name]" />
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer flex justify-end">
+                <el-button @click="editDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="editSubmitHandler">提交</el-button>
+            </span>
+        </el-dialog>
+
+        <!-- 添加数据弹窗 -->
+        <Dialog v-if="tableAddData" v-model="addTableDialogVisible" :title="`添加${tableData.table?.table_name_cn}`">
+            <el-form :model="tableAddData">
+                <template v-for="(item, key) in tableAddData.form_fields" :key="key">
+                    <!-- 日期选择器 -->
+                    <el-form-item v-if="isDateField(item)" :label="item.vi_name">
+                        <el-date-picker :type="item.my_column_type"
+                            :format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                            :value-format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                            v-model="tableAddDataForm[key]" />
+                    </el-form-item>
+                    <!-- 输入框 -->
+                    <el-form-item :label="item.vi_name" v-else-if="isInputField(item)">
+                        <el-input v-model="tableAddDataForm[key]" placeholder="请输入" />
+                    </el-form-item>
+                    <!-- 下拉框 -->
+                    <el-form-item :label="item.vi_name" v-else-if="isSelectField(item)">
+                        <el-select class="w-26!" v-model="tableAddDataForm[key]" placeholder="请选择" clearable>
+                            <el-option v-if="item.relative_list"
+                                v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
+                                :label="item2[1]" :value="item2[0]" />
+                        </el-select>
+                    </el-form-item>
+                    <!-- 未匹配任何 -->
+                    <el-form-item v-else>
+                        <el-input v-model="tableAddDataForm[key]" :placeholder="'请输入' + key" />
+                    </el-form-item>
+                </template>
+                <!-- <el-form-item>
+                    <el-button type="primary" @click="handleSubmit">提交</el-button>
+                </el-form-item> -->
+            </el-form>
+
+            <template #footer>
+                <el-button type="primary" @click="tableCMD_HandleAddSubmit">提交</el-button>
+                <el-button @click="addTableDialogVisible = false">关闭</el-button>
+            </template>
+        </Dialog>
+
+        <!-- 搜索条件选择框 -->
+        <Dialog v-model="serchDialogVisible" :title="tableData?.table?.table_name_cn + '选择'">
+
+        </Dialog>
+
+    </div>
+</template>
+
+<script lang="ts" setup>
+import { isDateField, isInputField, isSelectField, formatValue, isEditable, isPopupField } from "@/utils";
+import { deleteTableRowApi, editTableRowGetApi, editTableRowPostApi, getTableDataApi, getTableRowDatailApi } from "@/api/table/tableApi";
+import { computed, ref } from 'vue';
+import { useRoute } from 'vue-router'
+import type { TableData } from '@/api/table/Table'
+import {
+    ElTable,
+    ElTableColumn,
+    ElPagination,
+    ElButton,
+    ElForm,
+    ElFormItem,
+    ElInput,
+    ElDatePicker,
+    ElSelect,
+    ElOption,
+    ElRow,
+    ElCol,
+    ElDivider,
+    ElDialog,
+    ElAvatar,
+    ElMessage,
+    ElMessageBox,
+} from 'element-plus';
+import { ContentWrap } from "@/components/ContentWrap";
+import request from '@/axios'
+import { useAppStore } from '@/store/modules/app'
+import { Dialog } from '@/components/Dialog'
+import router from "@/router";
+import { SUCCESS_CODE } from "@/constants";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import { useTagsViewStore } from "@/store/modules/tagsView";
+
+// import { useOtherStore } from "@/store/modules/other";
+
+
+const route = useRoute()
+const appStore = useAppStore()
+const tagsViewStore = useTagsViewStore()
+// const otherStore = useOtherStore()
+
+
+// 分页
+const offset = ref(0) // 偏移量
+const per_page = ref(100) // 每页条数
+// 计算当前页码
+const currentPage = computed(() => {
+    return Math.floor(offset.value / per_page.value) + 1;
+})
+
+
+// 搜索表单数据
+const searchForm = ref<Record<string, any>>({});
+
+// 表格信息整体
+const tableData = ref<TableData>({
+    table: undefined,
+    all_cols: undefined,
+    offset: 0,
+    per_page: 0,
+    url_search: [],
+    table_name: "",
+    search_cols: undefined,
+    search: [],
+    search_data: [],
+    cols_show: undefined,
+    table_list_cmds: [],
+    cols_toggle: [],
+    table_cmds: [],
+    rows: [],
+    total_rows: 0,
+    table_cmd_strs: [],
+    pagination: "",
+    rows_list_search_form: "",
+    form_load_view_file: ""
+})
+
+// 获取数据时的loading状态
+const loading = ref(false)
+
+// 当前选中的行数据
+const currentRow = ref<Record<string, any>>({});
+const lookDialogVisible = ref(false); // 查看详情弹出框
+const editDialogVisible = ref(false); // 编辑详情弹出框
+
+// 多选选中的数据
+const multipleSelection = ref<any[]>([])
+
+// 添加数据弹窗
+const addTableDialogVisible = ref(false)
+
+// 表格添加时的表单数据
+const tableAddData = ref();
+const tableAddDataForm = ref({});
+
+// 查看某项数据显示的字段数据
+const lookDataFields = ref({});
+// 编辑某项数据的字段表单数据
+const editDataForm = ref({});
+
+// 条件搜索表单组件的弹窗状态
+const serchDialogVisible = ref(false)
+
+
+
+
+
+getTableData()
+
+
+
+// 获取表格数据
+async function getTableData() {
+    loading.value = true
+
+    // 处理搜索条件数据 日期范围
+    // create_time 是一个数组，分别为开始时间和结束时间
+    if (searchForm.value['create_time']?.length) {
+        searchForm.value['_create_time_min'] = searchForm.value['create_time'][0]
+        searchForm.value['_create_time_max'] = searchForm.value['create_time'][1]
+    }
+
+    let res = await getTableDataApi(
+        route.params.tableName as string,
+        offset.value,
+        per_page.value,
+        searchForm.value
+    )
+    // console.log(res.data);
+    // tableData.value = res.data.table
+    tableData.value = res.data
+    // currentPage.value = res.data.offset
+
+
+    // 初始化搜索表单数据
+    // if (tableData.value.search_cols) {
+    //     for (const key in tableData.value.search_cols) {
+    //         searchForm.value[key] = null;
+    //     }
+    // }
+
+    // 初始化delBtnVisible对象
+    // for (const key in tableData.value.cols_show) {
+    //     console.log('key',key)
+    // }
+
+    loading.value = false
+
+    // 将路由添加到标签栏
+    // console.log('router.currentRoute.value',router.currentRoute.value)
+    router.currentRoute.value.meta.title = tableData.value?.table?.table_name_cn
+    tagsViewStore.addVisitedView({ // 不缓存
+        ...router.currentRoute.value,
+        // name: tableData.value?.table?.table_name_cn
+    })
+}
+
+// 处理搜索
+async function handleSearch() {
+    console.log('搜索条件:', searchForm.value);
+    // 在这里添加搜索逻辑，例如调用API并传递搜索条件
+
+    // let searchRes = await request.post({
+    //     url: route.query.uri as string,
+    //     data: {
+    //         ...searchForm.value
+    //     },
+    //     params: {
+    //         offset: offset.value,
+    //         per_page: per_page.value
+    //     }
+    // })
+    // console.log('searchRes', searchRes)
+
+    getTableData()
+}
+// 处理重置
+function handleReset() {
+    for (const key in searchForm.value) {
+        searchForm.value[key] = null;
+    }
+    // 重置后可以重新获取数据或清空表格内容
+}
+
+// 查看操作
+async function handleView(row: any) {
+    console.log('查看:', row);
+    // appStore.getFormIsOpen // 是否是弹窗的方式打开表单
+    if (appStore.getFormIsOpen) {
+        currentRow.value = { ...row };
+
+        // 将某些属性值转为字符串以解决下拉选择框回显问题
+        formatValue(currentRow)
+
+        let res = await getTableRowDatailApi(route.params.tableName as string, row.id);
+        // console.log('res',res);
+        lookDataFields.value = res.data;
+        lookDialogVisible.value = true;
+
+    } else {
+        // 将行数据放到 otherStore
+        // otherStore.setTableRowData(row)
+
+        // 新页面打开
+        router.push(`/form/look?tableName=${route.params.tableName as string}&id=${row.id}`)
+    }
+
+
+}
+
+// 删除操作
+function handleDelete(row: any) {
+    // console.log('删除:', row);
+    ElMessageBox.confirm('确定要删除这条数据吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+    }).then(async () => {
+        // 执行删除操作
+        let delRes = await deleteTableRowApi(route.params.tableName as string, row.id)
+        // console.log('delRes',delRes)
+        if (delRes.code == SUCCESS_CODE) {
+            ElMessage({
+                type: 'success',
+                message: delRes.msg,
+            })
+            getTableData() // 重新获取数据
+        } else {
+            ElMessage({
+                type: 'error',
+                message: '失败: ' + delRes.msg,
+            })
+        }
+    }).catch(() => {
+        // 取消删除操作
+    })
+}
+
+// 编辑操作
+async function handleEdit(row: any) {
+    // appStore.getFormIsOpen // 是否是弹窗的方式打开表单
+    if (appStore.getFormIsOpen) {
+        currentRow.value = { ...row };
+
+        formatValue(currentRow) // 将某些字段值转换为字符串以解决下拉选择框回显问题
+
+        let res = await editTableRowGetApi(route.params.tableName as string, row.id);
+        console.log('res', res);
+        editDataForm.value = res.data;
+        editDialogVisible.value = true;
+
+    } else {
+        // 将行数据放到 otherStore
+        // otherStore.setTableRowData(row)
+
+        // 新页面打开
+        router.push(`/form/edit?tableName=${route.params.tableName as string}&id=${row.id}`)
+    }
+
+}
+
+// 编辑提交操作
+function editSubmitHandler() {
+
+    // 只使用 editDataForm.form_field 的字段 在currentRow.value 中取值
+    let formData = {}
+    for (const key in editDataForm.value.form_fields) {
+        // 如果是 app_id 字段，将值改为number
+        if (key == 'app_id') {
+            formData[key] = Number(currentRow.value[key])
+        } else {
+            formData[key] = currentRow.value[key]
+        }
+    }
+    // console.log('formData', formData);
+    editTableRowPostApi(route.params.tableName as string, currentRow.value.id, formData).then(res => {
+        // console.log('res',res)
+        if (res.code == SUCCESS_CODE) {
+            ElMessage({
+                type: 'success',
+                message: res.msg,
+            })
+            editDialogVisible.value = false;
+            getTableData() // 重新获取数据
+        }
+    })
+}
+
+
+// 表格分页点击事件
+const handleSizeChange = (val: number) => {
+    // console.log(`${val} items per page`)
+    // per_page.value = val
+    // getTableData()
+
+    // 更新每页条数
+    per_page.value = val;
+    // 重新计算偏移量
+    offset.value = (currentPage.value - 1) * per_page.value;
+    // 获取新的表格数据
+    getTableData();
+}
+
+// 表格当前页点击事件
+const handleCurrentChange = (val: number) => {
+    // console.log(`current page: ${val}`)
+    // offset.value = val
+    // getTableData()
+
+    // 更新偏移量
+    offset.value = (val - 1) * per_page.value;
+    // 获取新的表格数据
+    getTableData();
+}
+
+// 表格多选框选择事件
+const handleSelectionChange = (val: any[]) => {
+    // multipleSelection.value = val
+    // console.log(multipleSelection.value);
+    // 抽取id
+    let ids = []
+    for (const item of val) {
+        ids.push(item.id);
+    }
+    multipleSelection.value = ids;
+}
+// 表格命令：批量删除操作 点击事件
+function tableCMD_HandleDeleteAll(cmdData: any) {
+    console.log('cmdData', cmdData)
+    // console.log('批量删除:', multipleSelection.value);
+    // 检查选中的项目数量
+    if (!multipleSelection.value.length) {
+        ElMessage({
+            message: '请勾选要删除的项目',
+            type: 'warning',
+        })
+    } else {
+        ElMessageBox.confirm(
+            `确定要删除选中的 ${multipleSelection.value.length} 项数据?`,
+            '警告',
+            {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning',
+            }
+        ).then(async () => {
+            await batchDelHandler(cmdData);
+        }).catch(() => { })
+    }
+
+}
+
+// 批量删除执行操作
+async function batchDelHandler(cmdData: any) {
+    // 将所有id以逗号分隔
+    let ids = multipleSelection.value.join(',');
+    // console.log('cmdData',cmdData)
+    // 执行删除操作
+    let res = await request.post({
+        url: cmdData.cmd_uri,
+        data: { ids },
+        // params: {ids}
+    });
+    console.log('res', res);
+    if (res.code == 0) {
+        ElMessage({
+            message: res.data.msg,
+            type: 'success',
+        });
+        // 刷新表格数据
+        // getTableData()
+    } else {
+        ElMessage({
+            message: res.data.msg,
+            type: 'warning',
+        });
+    }
+}
+
+// 表格命令：添加数据操作 点击事件
+async function tableCMD_HandleAddCB(cmdData: any) {
+    // appStore.getFormIsOpen // 是否是弹窗的方式打开表单
+    if (appStore.getFormIsOpen) {
+        // 请求数据
+        let res = await request.get({ url: cmdData.cmd_uri })
+        // 弹窗打开
+        addTableDialogVisible.value = true;
+        tableAddData.value = res.data
+        // console.log('tableAddData.value', tableAddData.value)
+
+    } else {
+        // 新页面打开
+        router.push(`/form/edit?uri=${cmdData.cmd_uri}`)
+    }
+}
+// 表格命令：添加数据
+async function tableCMD_HandleAddSubmit() {
+    // console.log('保存数据:', tableAddData.value);
+    // addTableDialogVisible
+
+    // 处理url 将url中的'https://a.plant360.cn/element_admin/Admin'替换为 ''
+    let url = tableAddData.value.form_action
+    url = url.replace(import.meta.env.VITE_API_BASE_PATH_URL, '')
+    let res = await request.post({ url, data: tableAddDataForm.value })
+    // console.log('res', res)
+    if (res.code == 0) {
+        addTableDialogVisible.value = false;
+        ElMessage({
+            message: `${res.msg}`,
+            type: 'success',
+            duration: 1500,
+        })
+        // 刷新表格数据
+        getTableData()
+
+    } else {
+        ElMessage({
+            message: `失败: ${res.msg}`,
+            type: 'warning',
+        })
+    }
+}
+
+// 导出Exel
+const exportExcel = () => {
+    // 判断有没有选中的数据
+    if (multipleSelection.value.length) {
+
+    } else {
+        ElMessageBox.confirm(
+            `当前没有选中任何数据，将为你导出整个表格数据(含${tableData.value.rows.length}项)，确定吗?`,
+            '警告',
+            {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning',
+            }
+        ).then(async () => {
+            // 创建一个工作簿
+            const wb = XLSX.utils.book_new();
+
+            const visibleColumns = Object.values(tableData.value.cols_show);
+            let data = formatTableData(tableData.value, visibleColumns);
+
+            // console.log('data', data)
+            // return
+
+            // 将数据转换为工作表
+            const jsonData = data.map(row => {
+                const formattedRow = {};
+                visibleColumns.forEach(col => { // 取中文表头
+                    formattedRow[col.vi_name] = row[col.my_column_name];
+                });
+                return formattedRow;
+            });
+            const ws = XLSX.utils.json_to_sheet(jsonData);
+            // const ws = XLSX.utils.json_to_sheet(data);
+
+
+            // 表头样式
+            const headerRange = XLSX.utils.decode_range(ws['!ref'] ?? '');
+            for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
+                const address = XLSX.utils.encode_cell({ c: C, r: 0 });
+                if (!ws[address]) continue;
+                ws[address].s = {
+                    font: {
+                        name: 'Arial',
+                        sz: 14,
+                        bold: true,
+                        color: { rgb: "FFFFFF" }
+                    },
+                    fill: {
+                        fgColor: { rgb: "4F81BD" }
+                    },
+                    alignment: {
+                        vertical: "center",
+                        horizontal: "center"
+                    },
+                    border: {
+                        top: { style: "thin", color: { rgb: "000000" } },
+                        bottom: { style: "thin", color: { rgb: "000000" } },
+                        left: { style: "thin", color: { rgb: "000000" } },
+                        right: { style: "thin", color: { rgb: "000000" } }
+                    }
+                };
+            }
+            // 设置列宽
+            ws['!cols'] = visibleColumns.map(col => ({ wpx: col.width || 130 }));
+
+            // console.log('ws',ws)
+            // return
+
+            // 将工作表添加到工作簿
+            XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+
+            // 生成 Excel 文件并触发下载
+            // const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            // saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'table_data.xlsx');
+
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+            function s2ab(s) {
+                const buf = new ArrayBuffer(s.length);
+                const view = new Uint8Array(buf);
+                for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+                return buf;
+            }
+            saveAs(new Blob([s2ab(wbout)], { type: 'application/octet-stream' }), 'table_data.xlsx');
+        }).catch(() => { })
+    }
+};
+// 提取并格式化数据
+const formatTableData = (data, columns) => {
+    return data.rows.map(row => {
+        const formattedRow = {};
+        columns.forEach(col => {
+            formattedRow[col.my_column_name] = row[col.my_column_name];
+        });
+        return formattedRow;
+    });
+};
+
+
+// 格式化日期函数
+const formatDate = (date, type) => {
+    const options = type === 'date' ? { year: 'numeric', month: '2-digit', day: '2-digit' } : { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    return new Intl.DateTimeFormat('zh-CN', options).format(new Date(date));
+};
+// 获取下拉选择框标签函数
+const getSelectLabel = (field, value) => {
+    return field.relative_list ? field.relative_list[value] : value;
+};
+</script>
+
+
+
+<style scoped>
+.field-container {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.field-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.field-label {
+    font-weight: bold;
+    color: #333;
+}
+
+.field-value {
+    color: #666;
+}
+</style>

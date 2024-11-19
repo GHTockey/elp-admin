@@ -1,0 +1,132 @@
+<template>
+    <ContentWrap v-loading="loading">
+        <!-- <span class="text-size-xl font-700">{{ lookDataFields?.table?.table_name_cn }}</span>
+        <el-divider /> -->
+
+        <!-- 返回上一级 -->
+        <div class="pb5">
+            <el-button :type="'default'" @click="$router.back()">返回上一级</el-button>
+        </div>
+
+        <el-descriptions v-if="!loading" :column="1" border>
+            <el-descriptions-item label-align="right" v-for="(field, key) in lookDataFields.form_fields" :key="key"
+                :label="field.vi_name">
+                <!-- 日期选择器 -->
+                <template v-if="FieldTypeChecker.isDateField(field)">
+                    <el-date-picker :type="field.my_column_type" disabled
+                        :format="`YYYY-MM-DD ${field.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                        :value-format="`YYYY-MM-DD ${field.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                        v-model="currentRow[field.my_column_name]" />
+                </template>
+                <!-- 富文本 -->
+                <template v-else-if="FieldTypeChecker.isRichTextField(field)">
+                    <div v-html="currentRow[field.my_column_name]"></div>
+                </template>
+                <!-- 下拉选择框 -->
+                <template v-else-if="FieldTypeChecker.isSelectField(field)">
+                    <span>{{ getSelectFieldLabel(field, currentRow[field.my_column_name]) }}</span>
+                </template>
+                <!-- 图片 -->
+                <template v-else-if="FieldTypeChecker.isAvatarField(field)">
+                    <a v-if="currentRow[field.my_column_name]" :href="getFullImageUrl(currentRow[field.my_column_name])"
+                        target="_blank">
+                        <img :src="getFullImageUrl(currentRow[field.my_column_name])" class="avatar" />
+                    </a>
+                    <span v-else>暂无数据</span>
+                </template>
+                <!-- 文件/视频 -->
+                <template v-else-if="FieldTypeChecker.isFileUploadField(field)">
+                    <a v-if="currentRow[field.my_column_name]" :href="getFullImageUrl(currentRow[field.my_column_name])"
+                        target="_blank" style="text-decoration: none;">查看 {{
+                            getFileName(currentRow[field.my_column_name]) }} 详情</a>
+                    <span v-else>暂无数据</span>
+                </template>
+                <!-- vue 图标 -->
+                <template v-else-if="field.my_column_name == 'icon_vue'">
+                    <span v-if="currentRow[field.my_column_name]" class="w-[25px] inline-block">
+                        <Icon :icon="currentRow[field.my_column_name]" />
+                    </span>
+                    <span v-if="currentRow[field.my_column_name]">{{ currentRow[field.my_column_name] }}</span>
+                    <span v-else>暂无数据</span>
+                </template>
+                <!-- 其他字段 -->
+                <template v-else>
+                    <span>{{ currentRow[field.my_column_name] }}</span>
+                </template>
+            </el-descriptions-item>
+        </el-descriptions>
+    </ContentWrap>
+</template>
+
+<script setup lang="ts">
+import { ContentWrap } from "@/components/ContentWrap";
+import { formatValue, FieldTypeChecker, getFullImageUrl } from "@/utils";
+import { ref, watch, onMounted } from 'vue';
+import { ElDescriptions, ElDescriptionsItem, ElDatePicker, ElDivider, ElButton } from "element-plus";
+import { getTableRowDatailApi } from "@/api/table/tableApi";
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const currentRow = ref({});
+const lookDataFields = ref({});
+const loading = ref(false);
+
+const props = defineProps({
+    rowData: Object,
+    fieldsData: Object
+});
+
+watch([() => props.rowData, () => props.fieldsData], ([newRowData, newFieldsData]) => {
+    if (newRowData && newFieldsData) {
+        currentRow.value = newRowData;
+        lookDataFields.value = newFieldsData;
+        formatValue(currentRow);
+        loading.value = false;
+    }
+});
+
+onMounted(() => {
+    if (!props.rowData || !props.fieldsData) {
+        getLookData();
+    }
+});
+
+async function getLookData() {
+    loading.value = true;
+    let { tableName, id } = route.query;
+
+    let res = await getTableRowDatailApi(tableName as string, id as string);
+    lookDataFields.value = res.data;
+    currentRow.value = res.data.target;
+
+    // 将某些属性值转为字符串以解决下拉选择框回显问题
+    formatValue(currentRow);
+    loading.value = false;
+
+    // 设置标题
+    document.title = `${lookDataFields.value?.table?.table_name_cn} - 查看`;
+}
+
+function getFileName(url) {
+    return url.split('/').pop();
+}
+
+function getSelectFieldLabel(field, value) {
+    if (field.relative_list) {
+        for (const [key, label] of Object.entries(field.relative_list)) {
+            if (key == value) {
+                return label;
+            }
+        }
+    }
+    return value;
+}
+</script>
+
+<style scoped>
+.avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+}
+</style>

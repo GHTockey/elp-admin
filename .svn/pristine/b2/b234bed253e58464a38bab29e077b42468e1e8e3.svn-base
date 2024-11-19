@@ -1,0 +1,9 @@
+import request from '@/axios'
+import type { NavData } from './types'
+
+
+// 获取navs数据
+export const getNavsApi = (): Promise<IResponse<NavData>> => {
+    return request.get({ url: '/Admin/Index/index', params: { '__API_TMP_TEST_119__': 1 } })
+    // return request.get({ url: '/Admin/Index/index' })
+}

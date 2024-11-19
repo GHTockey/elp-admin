@@ -1,0 +1,33 @@
+import { defineStore } from 'pinia'
+import { store } from '../index'
+import { NavData } from '@/api/other/types'
+
+
+// nav数据类型
+interface OtherState {
+    navs: NavData
+}
+
+
+export const useOtherStore = defineStore('other', {
+    state: (): OtherState => {
+        return {
+            navs: {} as NavData
+        }
+    },
+    getters: {
+        getNavs(): NavData {
+            return this.navs
+        }
+    },
+    actions: {
+        setNavs(navs: NavData) {
+            this.navs = navs
+        }
+    },
+    persist: true
+})
+
+export const useOtherStoreWithOut = () => {
+    return useOtherStore(store)
+}

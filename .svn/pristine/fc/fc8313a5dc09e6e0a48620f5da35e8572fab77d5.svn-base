@@ -1,0 +1,40 @@
+<template>
+  <ContentWrap :title="'me333'">
+
+    <div class="flex items-center">
+      Menu3:
+      <ElInput v-model="text" class="pl-20px" />
+    </div>
+
+    <br>
+
+    <div class="mb-4">
+      <el-button type="primary" @click="testApi">test</el-button>
+    </div>
+
+  </ContentWrap>
+</template>
+
+<script setup lang="ts">
+import { ElInput, ElButton } from 'element-plus'
+import { ContentWrap } from '@/components/ContentWrap'
+// import { useI18n } from '@/hooks/web/useI18n'
+import { ref } from 'vue'
+import { getNavsApi } from "@/api/other";
+
+defineOptions({
+  name: 'Menu3'
+})
+
+// const { t } = useI18n()
+
+const text = ref('3333')
+
+
+async function testApi() {
+  console.log('testApi')
+  let res = await getNavsApi()
+  console.log(res)
+}
+
+</script>
