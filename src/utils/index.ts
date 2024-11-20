@@ -559,7 +559,7 @@ export const getNavsFirstLevelPath = computed(() => (navs: any[]) => {
 });
 
 // 计算列宽
-// 优先表头宽度[为了不换行], 其次单元格内容宽度
+// 优先表头宽度[为了不让表头内容换行], 其次单元格内容宽度
 // 最后一列不计算宽度[默认占满剩余宽度]
 export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean = false, headerValue: string) {
   if (isLastColumn) {
@@ -577,7 +577,8 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
     if (typeof value === 'string') {
       // 检查值是否为链接或相对地址
       if (value.startsWith('http') || value.startsWith('/')) {
-        contentMaxWidth = Math.max(contentMaxWidth, defaultWidth); // 每次循环结束取最大值(同一列的数据有的是两个字，有的是三个字，取最大的)
+        contentMaxWidth = value.length * 8;
+        // contentMaxWidth = Math.max(contentMaxWidth, defaultWidth); 
       } else {
         // 计算每个单元格内容的宽度
         // const width = value.length * 10;
@@ -587,7 +588,7 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
         const englishAndNumbers = value.replace(/[\u4e00-\u9fa5]/g, '').length;
         const chineseCharacters = value.length - englishAndNumbers;
         const width = englishAndNumbers * 12 + chineseCharacters * 26; // 前者是英文和数字的宽度，后者是中文的宽度
-        contentMaxWidth = Math.max(contentMaxWidth, width);
+        contentMaxWidth = Math.max(contentMaxWidth, width); // 每次循环结束取最大值(同一列的数据有的是两个字，有的是三个字，取最大的)
       }
     } else if (typeof value === 'number') {
       // 处理数字类型

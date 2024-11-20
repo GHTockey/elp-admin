@@ -12,7 +12,7 @@
 
                 <!-- 搜索表单 -->
                 <el-form v-if="tableData.search_cols && Object.keys(tableData.search_cols).length > 0"
-                    :model="searchForm" inline>
+                    :model="searchForm" inline @keyup.enter="handleSearch">
                     <template v-for="(col, key) in tableData.search_cols" :key="key">
                         <!-- 按需换行 -->
                         <template v-if="!!col.list_search_pos_newline">
@@ -189,26 +189,27 @@
                                             icon-color="#626AEF" :title="item.cmd_tips"
                                             @confirm="tableCMD_AjaxCmdHandle(item)">
                                             <template #reference>
-                                                <el-button type="primary">
+                                                <el-button type="primary" :data-cmd-type="item.cmd_type">
                                                     <template v-if="!item.icon && item.svg_icon">
                                                         <el-icon>
                                                             <img :src="getFullImageUrl(item.svg_icon)"
                                                                 style="width: 100%; margin-right: 10px;" alt="icon" />
                                                         </el-icon>
                                                     </template>
-                                                    {{ item.cmd_cn }}-{{ item.cmd_type }}
+                                                    {{ item.cmd_cn }}
                                                 </el-button>
                                             </template>
                                         </el-popconfirm>
                                     </template>
-                                    <ElButton v-else type="primary" @click="tableCMD_AjaxCmdHandle(item)">
+                                    <ElButton v-else type="primary" @click="tableCMD_AjaxCmdHandle(item)"
+                                        :data-cmd-type="item.cmd_type">
                                         <template v-if="!item.icon && item.svg_icon">
                                             <el-icon>
                                                 <img :src="getFullImageUrl(item.svg_icon)"
                                                     style="width: 100%; margin-right: 10px;" alt="icon" />
                                             </el-icon>
                                         </template>
-                                        {{ item.cmd_cn }}-!{{ item.cmd_type }}
+                                        {{ item.cmd_cn }}
                                     </ElButton>
                                 </template>
                                 <!-- _blank_search_form 5 [复制字段 -->
@@ -326,8 +327,8 @@
                                         <el-popconfirm :title="cmd.cmd_tips || '确定执行此操作?'"
                                             @confirm="tableItemCMD_Handle({ ...cmd, row: scope.row })">
                                             <template #reference>
-                                                <el-button :size="'small'" :type="'primary'">{{ cmd.cmd_cn ||
-                                                    '' }}</el-button>
+                                                <el-button :size="'small'" :type="'primary'">
+                                                    {{ cmd.cmd_cn || '' }}</el-button>
                                             </template>
                                         </el-popconfirm>
                                     </template>
@@ -336,9 +337,9 @@
                                     <!-- 4 新窗口打开 -->
                                     <!-- 6 执行命令，有cmd_tips则弹窗确认 -->
                                     <template v-else>
-                                        <ElButton :size="'small'" :type="'primary'"
+                                        <ElButton :size="'small'" :type="'primary'" :data-cmd-type="cmd.cmd_type"
                                             @click="tableItemCMD_Handle({ ...cmd, row: scope.row })">
-                                            {{ cmd.cmd_cn || '' }}-{{ cmd.cmd_type }}
+                                            {{ cmd.cmd_cn || '' }}
                                         </ElButton>
                                     </template>
                                 </template>
