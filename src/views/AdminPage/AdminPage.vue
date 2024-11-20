@@ -33,13 +33,14 @@ const pageType = ref<'table' | 'cmd' | 'enum' | 'form' | 'unknown'>();
 
 // 存储 query 参数并确定页面类型
 ; (async () => {
+  // console.log(JSON.parse(JSON.stringify(route)));
   if (route.query.url) {
     const queryParams = route.query.url as string;
 
     // TODO: [lixiaosong-2024/11/20-请求冗余待优化] 这里请求数据是为了判断页面类型，确定类型后组件又会再次请求同样的数据，需优化
     await getUriData(queryParams);
 
-    pageType.value = determinePageType(queryParams, uriData.value) as 'table' | 'cmd' | 'enum' | 'form' | 'unknown';
+    pageType.value = await determinePageType(queryParams, uriData.value) as 'table' | 'cmd' | 'enum' | 'form' | 'unknown';
     console.log('页面类型:', pageType.value, uriData.value?.form_load_view_file);
     // 如果是 form 类型，则跳转
     if (pageType.value == 'form') {
@@ -48,6 +49,7 @@ const pageType = ref<'table' | 'cmd' | 'enum' | 'form' | 'unknown'>();
       router.push('/unknownPage');
     }
   } else {
+    console.log('没有 query.url');
     /**
      * 如果存在 redirectedFrom 参数，则跳转到该参数指定的路径
      * 因为登录之后需要重定向至原页面，vue-router 的 route.query 此时是不包含手动拼接的 query 参数的，
@@ -58,7 +60,7 @@ const pageType = ref<'table' | 'cmd' | 'enum' | 'form' | 'unknown'>();
     if (route.redirectedFrom) {
       router.push(route.redirectedFrom)
     } else {
-      router.push('/unknownPage');
+      // router.push('/unknownPage');
     }
   }
 })();

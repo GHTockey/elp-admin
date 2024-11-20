@@ -263,7 +263,8 @@
                     <!-- 表格列 -->
                     <el-table-column v-for="(item, index) in Object.values(tableData.cols_show)" :key="index"
                         :prop="item.my_column_name" :label="item.vi_name" :sortable="!!item.sortable"
-                        :width="tableColWidth?.[item.my_column_name] || getColumnWidth(item.my_column_name, tableData.rows, index === Object.values(tableData.cols_show).length - 1, item.vi_name)" :min-width="tableColWidth?.['default']">
+                        :width="tableColWidth?.[item.my_column_name] ||
+                            getColumnWidth(item.my_column_name, tableData.rows, index === Object.values(tableData.cols_show).length - 1, item.vi_name)" :min-width="tableColWidth?.['default']">
                         <template #default="scope">
                             <div>
                                 <!--  行为类型/角色/对象 -->
@@ -273,14 +274,14 @@
                                     }}
                                 </span>
                                 <!-- switch 单选 -->
-                                 <template v-else-if="FieldTypeChecker.isSwitchField(item)">
+                                <template v-else-if="FieldTypeChecker.isSwitchField(item)">
                                     <template v-if="!!scope.row[item.my_column_name]">
                                         <el-tag type="primary">是</el-tag>
                                     </template>
                                     <template v-else>
                                         <el-tag type="info">否</el-tag>
                                     </template>
-                                 </template>
+                                </template>
                                 <!-- vue图标 -->
                                 <template v-else-if="FieldTypeChecker.isVueIconField(item)">
                                     <template v-if="scope.row[item.my_column_name]">
@@ -300,7 +301,9 @@
                                     <template v-if="scope.row[item.my_column_name]">
                                         <span contenteditable style="cursor: text;"
                                             @blur="tableItemEditHandle($event, item, scope.row)">
-                                            {{ scope.row[item.my_column_name] }}<el-icon><EditPen /></el-icon>
+                                            {{ scope.row[item.my_column_name] }}<el-icon>
+                                                <EditPen />
+                                            </el-icon>
                                         </span>
                                     </template>
                                 </template>
@@ -314,8 +317,7 @@
                     <!-- 操作列-表格项命令(_coding_list_cmds_json) -->
                     <!-- prop, tableData, title -->
                     <!-- <el-table-column label="操作" :width="getWidthByContent(tableData.rows[0]?._coding_list_cmds_json)" -->
-                    <el-table-column label="操作" :width="getWidthByContent(tableData.rows)"
-                        fixed="right">
+                    <el-table-column label="操作" :width="getWidthByContent(tableData.rows)" fixed="right">
                         <template #default="scope">
                             <div class="flex">
                                 <template v-for="(cmd) in scope?.row?._coding_list_cmds_json" :key="cmd.id">
@@ -926,36 +928,30 @@ async function tableCMD_MainReloadHandler(cmdData: any) {
     // appStore.getFormIsOpen // 是否是弹窗的方式打开表单
     console.log(cmdData);
 
+
+    // 回到 /admin 页让 determinePageType 判断页面类型进行跳转
+    router.push({
+        path: '/admin',
+        query: { url: cmdData.cmd_uri }
+    })
+    return
+
     // 处理uri 
-    let uri = [...new Set(cmdData.cmd_uri.split('/'))].join('/')
-    // console.log('url', url)
-    // console.log(determinePageType(uri), 'determinePageType')
-    // if (uri.includes('/Table/table')) {
-    if (determinePageType(uri) == 'table') {
-        const getTableNameFromUrl = (url) => {
-            const match = url.match(/\/Table\/table\/(.+)$/) || url.match(/\/Admin\/Table\/table\/(.+)$/);
-            return match ? match[1] : '';
-        };
-        const tableName = getTableNameFromUrl(uri); // 获取表名
-        router.push({ path: `/admin`, query: { uri: uri, tName: tableName } });
-        return;
-    }
-    router.push(`/form/edit?uri=${uri}`)
-
-    // if (appStore.getFormIsOpen) {
-    //     // 请求数据
-    //     // let res = await request.get({ url: cmdData.cmd_uri })
-    //     let res = await request.get({ url: uri })
-    //     // 弹窗打开
-    //     addTableDialogVisible.value = true;
-    //     tableAddData.value = res.data
-    //     // console.log('tableAddData.value', tableAddData.value)
-
-    // } else {
-    //     // 新页面打开
-    //     // router.push(`/form/edit?uri=${cmdData.cmd_uri}`)
-    //     router.push(`/form/edit?uri=${uri}`)
+    // let uri = [...new Set(cmdData.cmd_uri.split('/'))].join('/')
+    // // console.log('uri', uri)
+    // // console.log('url', url)
+    // // console.log(determinePageType(uri), 'determinePageType')
+    // // if (uri.includes('/Table/table')) {
+    // if (determinePageType(uri) == 'table') {
+    //     const getTableNameFromUrl = (url) => {
+    //         const match = url.match(/\/Table\/table\/(.+)$/) || url.match(/\/Admin\/Table\/table\/(.+)$/);
+    //         return match ? match[1] : '';
+    //     };
+    //     const tableName = getTableNameFromUrl(uri); // 获取表名
+    //     router.push({ path: `/admin`, query: { uri: uri, tName: tableName } });
+    //     return;
     // }
+    // router.push(`/form/edit?uri=${uri}`)
 };
 // 表格命令：添加数据
 async function tableCMD_HandleAddSubmit() {
@@ -1004,11 +1000,11 @@ async function tableItemCMD_Handle(cmdData: any) {
     // console.log('cmdData', cmdData)
     let { cmd_uri, cmd_type, row } = cmdData;
     if (cmd_type == 2) { // table 表中表
-        // console.log('2 cmd_uri', cmd_uri);
+        console.log('2 cmd_uri', cmd_uri);
         // console.log('/table?tName=' + (<string>cmd_uri).replace('/Table/table', '') + (row.my_table_name || '/' + row.id));
         if (cmd_uri.startsWith('http')) {
             // 判断页面类型
-            let pageType = determinePageType(cmd_uri)
+            let pageType = await determinePageType(cmd_uri, null)
             if (pageType == 'table') {
                 router.push('/table?url=' + cmd_uri)
             } else if (pageType == 'form') {

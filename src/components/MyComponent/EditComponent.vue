@@ -1,5 +1,5 @@
 <template>
-    <!-- <ContentWrap v-loading="loading"> -->
+    <ContentWrap v-loading="loading">
     <div class="pb5" v-if="showBack">
         <el-button :type="'default'" @click="router.back()">返回上一级</el-button>
     </div>
@@ -148,11 +148,11 @@
                     <template v-else-if="FieldTypeChecker.isSelectField(item)">
                         <!-- 下拉选择-异步模糊检索 -->
                         <template v-if="item.search_field">
-                            <div>
+                            <!-- <div>
                                 异步模糊检索
                                 tableDataForm[key]: {{ tableDataForm[key] }}
-                                <!-- asyncSearchData[key]: {{ asyncSearchData[key] }} -->
-                            </div>
+                                asyncSearchData[key]: {{ asyncSearchData[key] }}
+                            </div> -->
                             <el-select v-model="tableDataForm[key]" :multiple="(!!item.relative_multiple)" filterable
                                 remote reserve-keyword :placeholder="item.placeholder_search || '请输入'"
                                 :remote-method="remoteMethod(item, key)" :loading="asyncSearchData[key]?.loading"
@@ -160,15 +160,14 @@
                                 <!-- 数据回显需要，如果 asyncSearchData[key] 为空，则去 tableDataForm[key] 中找 -->
                                 <!-- 因为 asyncSearchData[key] 是异步搜索的数据 -->
                                 <template v-if="asyncSearchData[key]">
-                                    <el-option v-for="item2 in asyncSearchData[key]" :key="item2.id" :label="item2.name"
-                                        :value="item2.id" />
-                                    <!-- <el-option v-for="(item2, index2) in Object.entries(item.relative_list)"
-                                        :key="item2[0]" :label="item2[1]" :value="item2[0]" /> -->
+                                    <el-option v-for="(item2, index2) in asyncSearchData[key]" :key="index2"
+                                        :label="item2.name" :value="item2.id" />
                                 </template>
                                 <template v-else>
                                     <!-- value绑定值判断是因为 多选框的值是数组，单选框的值是字符串， 否则回显异常-->
                                     <el-option v-for="(item2, index2) in Object.entries(item.relative_list)"
-                                        :key="+item2[0]" :label="item2[1]" :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
+                                        :key="+item2[0] + index2" :label="item2[1]"
+                                        :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
                                 </template>
                                 <!-- 请求动画 -->
                                 <template #loading>
@@ -374,8 +373,19 @@
                                     filterable remote reserve-keyword :placeholder="item.placeholder_search || '请输入'"
                                     :remote-method="remoteMethod(item, key)" :loading="asyncSearchData[key]?.loading"
                                     style="width: 240px">
-                                    <el-option v-for="item2 in asyncSearchData[key]" :key="item2.id" :label="item2.name"
-                                        :value="item2.id" />
+                                    <!-- 数据回显需要，如果 asyncSearchData[key] 为空，则去 tableDataForm[key] 中找 -->
+                                    <!-- 因为 asyncSearchData[key] 是异步搜索的数据 -->
+                                    <template v-if="asyncSearchData[key]">
+                                        <el-option v-for="(item2, index2) in asyncSearchData[key]" :key="index2"
+                                            :label="item2.name" :value="item2.id" />
+                                    </template>
+                                    <template v-else>
+                                        <!-- value绑定值判断是因为 多选框的值是数组，单选框的值是字符串， 否则回显异常-->
+                                        <el-option v-for="(item2, index2) in Object.entries(item.relative_list)"
+                                            :key="+item2[0] + index2" :label="item2[1]"
+                                            :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
+                                    </template>
+                                    <!-- 请求动画 -->
                                     <template #loading>
                                         <svg class="circular" viewBox="0 0 50 50">
                                             <circle class="path" cx="25" cy="25" r="20" fill="none" />
@@ -443,7 +453,7 @@
         <el-button type="primary" @click="handleSubmit(false)" v-if="!isEdit">提交并继续</el-button>
         <el-button type="primary" @click="handleSubmit(true)">提交</el-button>
     </div>
-    <!-- </ContentWrap> -->
+    </ContentWrap>
 
     <!-- 弹框选择 -->
     <DialogSelect v-model="dataDialogVisible" :title="tableSelectData?.table?.table_name_cn + '选择'" />

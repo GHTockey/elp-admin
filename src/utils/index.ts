@@ -4,7 +4,8 @@
 
 import { getFileUploadSliceGuidApi, uploadFileApi } from "@/api/other"
 import { isNumber } from "util"
-import { computed, h, Ref } from "vue"
+import { computed, h, Ref } from "vue";
+import request from "@/axios";
 
 
 // const baseURL = import.meta.env.VITE_BASE_URL
@@ -228,7 +229,7 @@ export function formatValue(currentRow: Ref<any>) {
 
 
 // 判断页面类型的函数  TODO: 1119-lixiaosong 这里应改为从 query 得到 uri 然后发起请求拿到数据来判断类型的 [2024/11/20 已完成]
-export const determinePageType = (uri: string, uriData: any): string => {
+export const determinePageType = async (uri: string, uriData: any): Promise<string> => {
   // if (uri.includes('/Table') && uri.includes('/table')) { // 表格页
   //   return 'table';
   // } else if (uri.includes('/cmds')) { // 常用命令页
@@ -240,6 +241,11 @@ export const determinePageType = (uri: string, uriData: any): string => {
   // }
   // return 'unknown'; // 默认返回 'unknown'
 
+  // 如果 uriData 为空，则请求uri获取
+  if (!uriData) {
+    let res = await request.get({ url: uri })
+    uriData = res.data
+  }
 
   if (uriData.form_load_view_file == 'TableManage:rows_list_layout') { // 表格页
     return 'table';
@@ -560,12 +566,9 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
     return 'auto';
   }
 
-  // const tableWidth = document.getElementById('tce_table')?.offsetWidth;
-  // console.log('tableWidth', tableWidth)
-
-  let maxWidth = 0;
+  let contentMaxWidth = 0;
   // 根据 headerValue 计算默认宽度
-  const defaultWidth = headerValue.length * 16 + 30; // 假设每个字符宽度为12px，padding为25px
+  const defaultWidth = headerValue.length * 16 + 45; // 假设每个字符宽度为16px，padding为45px (留出padding是为了有的表头内容还有排序箭头)
 
   cols.forEach(row => {
     const value = row[key];
@@ -574,21 +577,31 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
     if (typeof value === 'string') {
       // 检查值是否为链接或相对地址
       if (value.startsWith('http') || value.startsWith('/')) {
-        maxWidth = Math.max(maxWidth, defaultWidth);
+        contentMaxWidth = Math.max(contentMaxWidth, defaultWidth); // 每次循环结束取最大值(同一列的数据有的是两个字，有的是三个字，取最大的)
       } else {
         // 计算每个单元格内容的宽度
-        const width = value.length * 10;
-        maxWidth = Math.max(maxWidth, width);
+        // const width = value.length * 10;
+        // contentMaxWidth = Math.max(contentMaxWidth, width);
+
+        // 计算每个单元格内容的宽度
+        const englishAndNumbers = value.replace(/[\u4e00-\u9fa5]/g, '').length;
+        const chineseCharacters = value.length - englishAndNumbers;
+        const width = englishAndNumbers * 12 + chineseCharacters * 26; // 前者是英文和数字的宽度，后者是中文的宽度
+        contentMaxWidth = Math.max(contentMaxWidth, width);
       }
     } else if (typeof value === 'number') {
       // 处理数字类型
-      const width = value.toString().length * 12;
-      maxWidth = Math.max(maxWidth, width);
+      const width = value.toString().length * 16;
+      contentMaxWidth = Math.max(contentMaxWidth, width);
     } else {
       // 处理其他类型，使用默认宽度
-      maxWidth = Math.max(maxWidth, defaultWidth);
+      contentMaxWidth = Math.max(contentMaxWidth, defaultWidth);
     }
   });
 
-  return maxWidth > defaultWidth ? maxWidth : defaultWidth;
+  // console.log('表头宽度', headerValue, defaultWidth)
+  // console.log('内容宽度', contentMaxWidth)
+
+  return contentMaxWidth > defaultWidth ? contentMaxWidth : defaultWidth;
+  // return contentMaxWidth;
 }
