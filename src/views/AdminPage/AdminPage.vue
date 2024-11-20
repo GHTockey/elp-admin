@@ -14,7 +14,7 @@
 
 <script lang="ts" setup>
 // import { ContentWrap } from "@/components/ContentWrap";
-import { ref, unref } from 'vue';
+import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 import TablePage from "../Table/Table.vue";
 import InfoListPage from "../InfoListPage/InfoListPage.vue";
@@ -28,7 +28,7 @@ const route = useRoute();
 // uri 返回的数据
 const uriData = ref<any>(null);
 // 页面类型
-const pageType = ref<'table' | 'cmd' | 'enum' | 'form'>();
+const pageType = ref<'table' | 'cmd' | 'enum' | 'form' | 'unknown'>();
 
 
 // 存储 query 参数并确定页面类型
@@ -36,15 +36,25 @@ const pageType = ref<'table' | 'cmd' | 'enum' | 'form'>();
   if (route.query.url) {
     const queryParams = route.query.url as string;
 
+    // TODO: [lixiaosong-2024/11/20-请求冗余待优化] 这里请求数据是为了判断页面类型，确定类型后组件又会再次请求同样的数据，需优化
     await getUriData(queryParams);
 
-    pageType.value = determinePageType(queryParams, uriData.value);
+    pageType.value = determinePageType(queryParams, uriData.value) as 'table' | 'cmd' | 'enum' | 'form' | 'unknown';
     console.log('页面类型:', pageType.value, uriData.value?.form_load_view_file);
     // 如果是 form 类型，则跳转
     if (pageType.value == 'form') {
       router.push(`/form/edit?uri=${queryParams}`);
+    } else if (pageType.value == 'unknown') {
+      router.push('/unknownPage');
     }
   } else {
+    /**
+     * 如果存在 redirectedFrom 参数，则跳转到该参数指定的路径
+     * 因为登录之后需要重定向至原页面，vue-router 的 route.query 此时是不包含手动拼接的 query 参数的，
+     * 但是在 redirectedFrom 是包含的
+     * @date 2024/11/20
+     * @author lixiaosong
+     */
     if (route.redirectedFrom) {
       router.push(route.redirectedFrom)
     } else {

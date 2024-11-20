@@ -227,7 +227,7 @@ export function formatValue(currentRow: Ref<any>) {
 }
 
 
-// 判断页面类型的函数  TODO: 1119-lixiaosong 这里应改为从 query 得到 uri 然后发起请求拿到数据来判断类型的
+// 判断页面类型的函数  TODO: 1119-lixiaosong 这里应改为从 query 得到 uri 然后发起请求拿到数据来判断类型的 [2024/11/20 已完成]
 export const determinePageType = (uri: string, uriData: any): string => {
   // if (uri.includes('/Table') && uri.includes('/table')) { // 表格页
   //   return 'table';

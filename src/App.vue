@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useAppStore } from '@/store/modules/app'
 import { ConfigGlobal } from '@/components/ConfigGlobal'
 import { useDesign } from '@/hooks/web/useDesign'
@@ -9,6 +9,9 @@ import SacManage from '@/utils/SacManage';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useUserStore } from '@/store/modules/user';
 import { storeToRefs } from 'pinia';
+
+const userStore = useUserStore();
+const { userInfo } = storeToRefs(userStore);
 
 const { getPrefixCls } = useDesign();
 
@@ -24,19 +27,26 @@ appStore.initTheme();
 
 
 
-; (async () => {
-  // 这里调用是为了提前获取 admin 数据
-  // let userStore = useUserStore()
-  // if (!userStore.userInfo) {
-  let { data } = await getNavsApi();
-  // console.log(data);
-  const permissionStore = usePermissionStore();
-  const { admin } = storeToRefs(permissionStore);
-  admin.value = data.admin;
-  SacManage.admin = permissionStore.admin;
-  SacManage._adminRoleTableList = permissionStore.admin_role_table_list;
-  // }
-})();
+// ; (async () => {
+//   // 这里调用是为了提前获取 admin 数据
+//   let { data } = await getNavsApi();
+//   // console.log(data);
+//   const userStore = useUserStore();
+//   // 判断userStore
+
+//   const permissionStore = usePermissionStore();
+//   const { admin } = storeToRefs(permissionStore);
+//   admin.value = data.admin;
+//   SacManage.admin = permissionStore.admin;
+//   SacManage._adminRoleTableList = permissionStore.admin_role_table_list;
+// })();
+
+
+// 监听 userStore.userInfo 的变化, 发生变化就给 SacManage.admin 赋值
+watch(() => userInfo?.value, () => {
+  // console.log('userInfo 发生变化');
+  SacManage.admin = userInfo?.value || {};
+});
 </script>
 
 <template>

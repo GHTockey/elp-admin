@@ -148,12 +148,29 @@
                     <template v-else-if="FieldTypeChecker.isSelectField(item)">
                         <!-- 下拉选择-异步模糊检索 -->
                         <template v-if="item.search_field">
+                            <div>
+                                异步模糊检索
+                                tableDataForm[key]: {{ tableDataForm[key] }}
+                                <!-- asyncSearchData[key]: {{ asyncSearchData[key] }} -->
+                            </div>
                             <el-select v-model="tableDataForm[key]" :multiple="(!!item.relative_multiple)" filterable
                                 remote reserve-keyword :placeholder="item.placeholder_search || '请输入'"
                                 :remote-method="remoteMethod(item, key)" :loading="asyncSearchData[key]?.loading"
                                 style="width: 240px">
-                                <el-option v-for="item2 in asyncSearchData[key]" :key="item2.id" :label="item2.name"
-                                    :value="item2.id" />
+                                <!-- 数据回显需要，如果 asyncSearchData[key] 为空，则去 tableDataForm[key] 中找 -->
+                                <!-- 因为 asyncSearchData[key] 是异步搜索的数据 -->
+                                <template v-if="asyncSearchData[key]">
+                                    <el-option v-for="item2 in asyncSearchData[key]" :key="item2.id" :label="item2.name"
+                                        :value="item2.id" />
+                                    <!-- <el-option v-for="(item2, index2) in Object.entries(item.relative_list)"
+                                        :key="item2[0]" :label="item2[1]" :value="item2[0]" /> -->
+                                </template>
+                                <template v-else>
+                                    <!-- value绑定值判断是因为 多选框的值是数组，单选框的值是字符串， 否则回显异常-->
+                                    <el-option v-for="(item2, index2) in Object.entries(item.relative_list)"
+                                        :key="+item2[0]" :label="item2[1]" :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
+                                </template>
+                                <!-- 请求动画 -->
                                 <template #loading>
                                     <svg class="circular" viewBox="0 0 50 50">
                                         <circle class="path" cx="25" cy="25" r="20" fill="none" />
@@ -203,8 +220,11 @@
                     <!-- 默认整行输入框 -->
                     <el-input v-else :disabled="!SacManage.has_auth_edit_field(item) || item.my_column_name == 'id'"
                         v-model="tableDataForm[key]" :placeholder="item.placeholder_search || '请输入'" />
-                    <!-- 描述 -->
-                    <span v-if="item.vi_des" v-html="item.vi_des" class="text-xs text-gray font-italic"></span>
+                    <!-- 描述 0普通管理员 1开发者 2超级管理员 -->
+                    <!-- <template v-if="userStore.userInfo?.auth_role == 1 || userStore.userInfo?.auth_role == 2"> -->
+                    <template v-if="(userStore.userInfo?.auth_role == 1) || (item?.vi_des_enabled)">
+                        <span v-if="item.vi_des" v-html="item.vi_des" class="text-xs text-gray font-italic"></span>
+                    </template>
                 </el-form-item>
             </template>
         </el-form>
@@ -710,9 +730,13 @@ async function getFormData() {
                             })
                         }
                     })
-                    // console.log(tableDataForm.value[key], 'tableDataForm.value[key]');
                     if (typeof tableDataForm.value[key] == 'string') {
-                        tableDataForm.value[key] = tableDataForm.value[key].split(',');
+                        // console.log('tableDataForm.value[key]', tableDataForm.value[key]);
+                        tableDataForm.value[key] = tableDataForm.value[key].split(',')
+                        // tableDataForm.value[key] = tableDataForm.value[key].split(',').map(item => {
+                        //     return /^[0-9]$/.test(item) ? Number(item) : item;
+                        // });
+                        // console.log('tableDataForm.value[key]', tableDataForm.value[key]);
                     }
                 } else { // 没有值就初始化空数组 组件需要
                     tableDataForm.value[key] = [];
