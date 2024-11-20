@@ -228,14 +228,26 @@ export function formatValue(currentRow: Ref<any>) {
 
 
 // 判断页面类型的函数  TODO: 1119-lixiaosong 这里应改为从 query 得到 uri 然后发起请求拿到数据来判断类型的
-export const determinePageType = (uri: string): string => {
-  if (uri.includes('/Table') && uri.includes('/table')) { // 表格页
+export const determinePageType = (uri: string, uriData: any): string => {
+  // if (uri.includes('/Table') && uri.includes('/table')) { // 表格页
+  //   return 'table';
+  // } else if (uri.includes('/cmds')) { // 常用命令页
+  //   return 'cmd';
+  // } else if (uri.includes('/relative_static')) { // 系统枚举页
+  //   return 'enum';
+  // } else if (uri.includes('/edit') || uri.includes('/add')) { // 表单页
+  //   return 'form';
+  // }
+  // return 'unknown'; // 默认返回 'unknown'
+
+
+  if (uriData.form_load_view_file == 'TableManage:rows_list_layout') { // 表格页
     return 'table';
-  } else if (uri.includes('/cmds')) { // 常用命令页
+  } else if (uriData.form_load_view_file == 'Cd:cmds_layout') { // 常用命令页
     return 'cmd';
-  } else if (uri.includes('/relative_static')) { // 系统枚举页
-    return 'infoList';
-  } else if (uri.includes('/edit') || uri.includes('/add')) { // 表单页
+  } else if (uriData.form_load_view_file == 'Column:relative_static_layout') { // 系统枚举页
+    return 'enum';
+  } else if (uriData.form_load_view_file == 'CommonAjax:coding_edit_sys_layout') { // 表单页
     return 'form';
   }
   return 'unknown'; // 默认返回 'unknown'

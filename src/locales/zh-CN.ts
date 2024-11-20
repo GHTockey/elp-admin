@@ -63,7 +63,7 @@ export default {
     returnToHome: '返回首页'
   },
   setting: {
-    projectSetting: '项目配置',
+    projectSetting: '系统配置',
     theme: '主题',
     layout: '布局',
     systemTheme: '系统主题',

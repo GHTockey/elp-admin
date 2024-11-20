@@ -7,6 +7,7 @@ import { useDesign } from '@/hooks/web/useDesign'
 import { getNavsApi } from "@/api/other";
 import SacManage from '@/utils/SacManage';
 import { usePermissionStore } from '@/store/modules/permission';
+import { useUserStore } from '@/store/modules/user';
 import { storeToRefs } from 'pinia';
 
 const { getPrefixCls } = useDesign();
@@ -23,16 +24,19 @@ appStore.initTheme();
 
 
 
-// ; (async () => {
-//   // 这里调用是为了提前获取 admin 数据
-//   let { data } = await getNavsApi();
-//   // console.log(data);
-//   const permissionStore = usePermissionStore();
-//   const { admin } = storeToRefs(permissionStore);
-//   admin.value = data.admin;
-//   SacManage.admin = permissionStore.admin;
-//   SacManage._adminRoleTableList = permissionStore.admin_role_table_list;
-// })();
+; (async () => {
+  // 这里调用是为了提前获取 admin 数据
+  // let userStore = useUserStore()
+  // if (!userStore.userInfo) {
+  let { data } = await getNavsApi();
+  // console.log(data);
+  const permissionStore = usePermissionStore();
+  const { admin } = storeToRefs(permissionStore);
+  admin.value = data.admin;
+  SacManage.admin = permissionStore.admin;
+  SacManage._adminRoleTableList = permissionStore.admin_role_table_list;
+  // }
+})();
 </script>
 
 <template>

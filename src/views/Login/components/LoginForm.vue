@@ -275,7 +275,7 @@ const signIn = async () => {
             // console.log(redirect.value);
             router.push(redirect.value)
           } else {
-            router.push('/home')
+            router.push('/')
           }
 
           // // 是否使用动态路由

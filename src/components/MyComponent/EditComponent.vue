@@ -406,8 +406,11 @@
                         <!-- 默认整行输入框 -->
                         <el-input v-else :disabled="!SacManage.has_auth_edit_field(item) || item.my_column_name == 'id'"
                             v-model="tableDataForm[key]" :placeholder="item.placeholder_search || '请输入'" />
-                        <!-- 描述 -->
-                        <span v-if="item.vi_des" v-html="item.vi_des" class="text-xs text-gray font-italic"></span>
+                        <!-- 描述 0普通管理员 1开发者 2超级管理员 -->
+                        <!-- <template v-if="userStore.userInfo?.auth_role == 1 || userStore.userInfo?.auth_role == 2"> -->
+                        <template v-if="(userStore.userInfo?.auth_role == 1) || (item?.vi_des_enabled)">
+                            <span v-if="item.vi_des" v-html="item.vi_des" class="text-xs text-gray font-italic"></span>
+                        </template>
                     </el-form-item>
                 </template>
             </el-form>
@@ -455,7 +458,9 @@ import { getFileUploadSliceGuidApi, uploadFileApi } from "@/api/other";
 import { SUCCESS_CODE } from '@/constants';
 import type { UploadProps, UploadUserFile } from 'element-plus';
 import SacManage from '@/utils/SacManage';
-import { multiply } from 'lodash-es';
+import { useUserStore } from '@/store/modules/user';
+
+const userStore = useUserStore()
 
 
 const props = defineProps({

@@ -58,7 +58,9 @@ router.beforeEach(async (to, from, next) => {
     } else {
       // next()
       let queryObj = Object.keys(to.query).map(key => `${key}=${to.query[key]}`).join('&')
-      next(`/login?redirect=${to.path}?${queryObj}`) // 否则全部重定向到登录页
+      let redirectPath = queryObj ? `/login?redirect=${to.path}?${queryObj}` : `/login?redirect=${to.path}`
+      next(redirectPath)
+      // next(`/login?redirect=${to.path}?${queryObj}`) // 否则全部重定向到登录页
     }
   }
 })

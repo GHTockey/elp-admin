@@ -44,7 +44,7 @@ const toDocument = () => {
   <ElDropdown class="custom-hover" :class="prefixCls" trigger="click">
     <div class="flex items-center">
       <img
-        src="@/assets/imgs/avatar.jpg"
+        src="https://saas.jizhongkeji.com/static/jzkj/images/default_tou.png"
         alt=""
         class="w-[calc(var(--logo-height)-25px)] rounded-[50%]"
       />

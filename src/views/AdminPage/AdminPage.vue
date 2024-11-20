@@ -8,7 +8,7 @@
   <div class="admin-page">
     <TablePage v-if="pageType == 'table'" />
     <CmdPage v-else-if="pageType == 'cmd'"></CmdPage>
-    <InfoListPage v-else-if="pageType == 'infoList'"></InfoListPage>
+    <InfoListPage v-else-if="pageType == 'enum'"></InfoListPage>
   </div>
 </template>
 
@@ -21,27 +21,45 @@ import InfoListPage from "../InfoListPage/InfoListPage.vue";
 import CmdPage from "../CmdPage/CmdPage.vue";
 import { determinePageType } from '@/utils';
 import router from '@/router';
+import request from '@/axios';
 
 const route = useRoute();
 
+// uri 返回的数据
+const uriData = ref<any>(null);
 // 页面类型
-const pageType = ref<'table' | 'cmd' | 'infoList'>();
+const pageType = ref<'table' | 'cmd' | 'enum' | 'form'>();
 
 
 // 存储 query 参数并确定页面类型
-if (route.query.url) {
-  const queryParams = route.query.url as string;
-  pageType.value = determinePageType(queryParams);
-  console.log('页面类型:', pageType.value);
-} else {
-  // console.log(JSON.parse(JSON.stringify(unref(route))), 666);
+; (async () => {
+  if (route.query.url) {
+    const queryParams = route.query.url as string;
 
-  // 如果存在 redirectedFrom 参数，则跳转到该参数指定的路径
-  if (route.redirectedFrom) {
-    router.push(route.redirectedFrom)
+    await getUriData(queryParams);
+
+    pageType.value = determinePageType(queryParams, uriData.value);
+    console.log('页面类型:', pageType.value, uriData.value?.form_load_view_file);
+    // 如果是 form 类型，则跳转
+    if (pageType.value == 'form') {
+      router.push(`/form/edit?uri=${queryParams}`);
+    }
   } else {
-    // 否则跳转到 unknownPage
-    router.push('/unknownPage');
+    if (route.redirectedFrom) {
+      router.push(route.redirectedFrom)
+    } else {
+      router.push('/unknownPage');
+    }
+  }
+})();
+
+
+async function getUriData(uri: string) {
+  let res = await request.get({ url: uri });
+  if (res.code == 0) {
+    uriData.value = res.data;
+  } else {
+    console.debug(res.msg);
   }
 }
 </script>
