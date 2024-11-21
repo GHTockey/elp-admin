@@ -579,7 +579,7 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
       // 检查值是否为链接或相对地址
       if (value.startsWith('http') || value.startsWith('/')) {
         if (value.match(/\.(jpeg|jpg|gif|png)$/)) { // 检查是否是图片地址
-          console.log('key', key, ' value', value)
+          // console.log('key', key, ' value', value)
           contentMaxWidth = 70;
         } else {
           contentMaxWidth = value.length * 8;

@@ -252,8 +252,9 @@
                     绑定列属性：使用 :prop="item.my_column_name" 动态绑定列的属性名称，这样每一列都会自动对应到 rows 中的相应字段。
                     显示数据：在 el-table-column 的 default 插槽中，通过 scope.row[item.my_column_name] 动态获取并显示每一行的对应列数据。 -->
                 <el-table :scrollbar-always-on="false" :data="tableData.rows" style="width: 100%" border
-                    sortable="custom" @sort-change="tableSortHandle" max-height="calc(100vh - 200px)" id="tce_table"
-                    @selection-change="handleSelectionChange" class="tce_table">
+                    @header-dragend="tableColWidthDragHandle" sortable="custom" @sort-change="tableSortHandle"
+                    max-height="calc(100vh - 200px)" id="tce_table" @selection-change="handleSelectionChange"
+                    class="tce_table">
                     <!-- 复选框:根据tableData.table_cmds里是否有cmd_type == 1的 进行条件渲染 -->
                     <el-table-column type="selection" width="40" v-if="tableData.table_cmds.some(item =>
                         item.cmd_type == 1 ||
@@ -274,7 +275,7 @@
                                     <div>
                                         <!-- {{ Object.entries(item.relative_list) }} -->
                                         <!-- {{ scope.row[item.my_column_name] }} -->
-                                          <!-- {{ scope.row }} -->
+                                        <!-- {{ scope.row }} -->
 
                                         <el-button-group>
                                             <el-button
@@ -583,9 +584,45 @@ const tableSortField = ref();
 
 
 getTableData()
-// getTableColWidth()
+// getTableColWidth() // 这里调用时还没有表名  [在获取数据完成后调用]
+// onMounted(() => {
+//     getTableColWidth()
+// })
 
 
+
+// 获取表格列宽度 [public/table-col.json]
+function getTableColWidth() {
+    // 读取本地文件的方式
+    // tableColWidth.value = await getExternalFileValue()
+    // 读取本地存储
+    tableColWidth.value = JSON.parse(localStorage.getItem('tableColWidth') || '{}')[tableData.value.table_name]
+    // console.log('tableData.value.table_name', tableData.value.table_name);
+    // console.log('tableColWidth.value', tableColWidth.value);
+}
+
+// 表格列宽被拖动事件
+function tableColWidthDragHandle(newWidth: number, oldWidth: number, column: any, event: MouseEvent) {
+    // console.log('表格列宽被拖动', newWidth, oldWidth, column);
+    // column.property 字段名称
+
+    // newData
+    let newData = {
+        [column.property]: newWidth
+    }
+    // console.log('newData', newData);
+
+    // 原所有数据
+    let oldData = JSON.parse(localStorage.getItem('tableColWidth') || '{}')
+    // console.log('oldData', oldData);
+    // console.log({ ...oldData, ...newData });
+    oldData[tableData.value.table_name] = { ...oldData[tableData.value.table_name], ...newData }
+    // console.log('oldData', oldData);
+
+
+    // 更新本地存储
+    localStorage.setItem('tableColWidth', JSON.stringify(oldData))
+}
 
 // 表格排序事件
 async function tableSortHandle(e: any) {
@@ -766,6 +803,9 @@ async function getTableData() {
 
     // 设置网页标题
     document.title = tableData.value?.table?.table_name_cn
+
+
+    getTableColWidth()
 };
 
 // 处理搜索
