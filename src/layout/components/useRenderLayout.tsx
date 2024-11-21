@@ -119,9 +119,10 @@ export const useRenderLayout = () => {
   }
 
   const renderTopLeft = () => {
+    // layout-border__bottom
     return (
       <>
-        <div class="flex items-center bg-[var(--top-header-bg-color)] relative layout-border__bottom dark:bg-[var(--el-bg-color)]">
+        <div class="flex items-center bg-[var(--top-header-bg-color)] relative dark:bg-[var(--el-bg-color)]">
           {logo.value ? <Logo class="custom-hover"></Logo> : undefined}
 
           <ToolHeader class="flex-1"></ToolHeader>

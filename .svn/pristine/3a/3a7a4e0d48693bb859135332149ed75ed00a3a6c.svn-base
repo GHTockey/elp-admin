@@ -1,0 +1,601 @@
+<template>
+    <ContentWrap v-loading="loading">
+        <!-- <span class="text-size-xl font-700">{{ isEdit ? "编辑" : "添加" }}{{ tableData?.table.table_name_cn }}</span>
+        <el-divider /> -->
+
+        <!-- 返回上一级 -->
+        <div class="pb5">
+            <el-button :type="'default'" @click="router.back()">返回上一级</el-button>
+        </div>
+
+        <el-tabs v-model="activeTab" type="border-card">
+            <el-tab-pane v-for="(fields, tag) in groupedFields" :key="tag" :label="tag">
+                <el-form :model="tableDataForm" :rules="rules" ref="tableFormEl" label-width="180px">
+                    <template v-for="(item, key) in fields" :key="key">
+                        <!-- unknown_file_accept 条件渲染表单项 -->
+                        <transition name="fade">
+                            <template
+                                v-if="key == 'unknown_file_accept' && tableDataForm['my_data_type'] == 'unknown_file'">
+                                <el-form-item :label="item.vi_name" :prop="key" class="w-[90%]">
+                                    <el-input v-model="tableDataForm[key]" class="input-width" />
+                                    <!-- 描述 -->
+                                    <span v-if="fields[key].vi_des" v-html="fields[key].vi_des"
+                                        class="text-xs text-gray font-italic">
+                                    </span>
+                                </el-form-item>
+                            </template>
+                        </transition>
+                        <el-form-item :label="item.vi_name" :prop="key" class="w-[90%]"
+                            v-if="key != 'unknown_file_accept'">
+                            <!-- 日期选择器 -->
+                            <el-date-picker v-if="FieldTypeChecker.isDateField(item)" :type="item.my_column_type"
+                                :disabled="isEditable(item.auth)"
+                                :format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                                :value-format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                                v-model="tableDataForm[key]" class="input-width" />
+                            <!-- 头像/图片上传 -->
+                            <el-upload v-else-if="FieldTypeChecker.isAvatarField(item)" class="avatar-uploader"
+                                :http-request="createUploadHandler(item.my_column_name)" :show-file-list="false"
+                                :on-success="(response, file) => handleAvatarSuccess(response, file, key)"
+                                :before-upload="beforeAvatarUpload" accept="image/png,image/jpg,image/jpeg,.svg">
+                                <img v-if="tableDataForm[key]"
+                                    :src="getFullImageUrl(tableDataForm[key + '_imageUrl'] || tableDataForm[key])"
+                                    class="avatar" />
+                                <!-- <img v-if="tableDataForm[key]" :src="'https://a.plant360.cn/uploads/element_admin/res_v2/d5b31928eed818cfe119e6d21da54824.s4445.w199.h136.png'" class="avatar"
+                                    @load="() => console.log(key)" /> -->
+                                <el-icon v-else class="avatar-uploader-icon">
+                                    <Plus />
+                                </el-icon>
+                            </el-upload>
+                            <!-- switch 切换 -->
+                            <el-switch v-else-if="FieldTypeChecker.isSwitchField(item)" v-model="tableDataForm[key]"
+                                inline-prompt :active-text="item.relative_list?.[1]"
+                                :inactive-text="item.relative_list?.[0]" active-value="1" inactive-value="0" />
+                            <!-- 富文本编辑器 -->
+                            <template v-else-if="FieldTypeChecker.isRichTextField(item)">
+                                <p>
+                                    <Editor v-model="tableDataForm[key]" ref="editorRef" />
+                                </p>
+                            </template>
+                            <!-- 文件上传 -->
+                            <TceUpload v-else-if="FieldTypeChecker.isFileUploadField(item)"
+                                v-model:model-value="tableDataForm[key]" :req-params="{
+                                    table_name: tableData.table_name,
+                                    field_name: item.my_column_name,
+                                    fileType: item.my_data_type == 'video' ? '.mp4' :
+                                        (item.unknown_file_accept?.includes('excel') ? '.xlsx,.xls' : item.my_data_type)
+                                }" />
+                            <!-- 弹框选择 -->
+                            <template v-else-if="FieldTypeChecker.isPopupField(item)">
+                                <div class="flex" @click="tableDialogSelectHandle(item)">
+                                    <el-input v-model="tableDataForm[key]" placeholder="请选择">
+                                        <!-- 回显数据 -->
+                                        <template #prefix>
+                                            <span class="ml-10">{{ tableSelectObjData.find(item => item.id ==
+                                                tableDataForm[key])?.my_table_name }}</span>
+                                        </template>
+                                        <template #append>
+                                            <el-button type="primary">选择</el-button>
+                                        </template>
+                                    </el-input>
+                                </div>
+                            </template>
+                            <!-- 腾讯坐标 -->
+                            <div v-else-if="FieldTypeChecker.isQqmapLnglatField(item)" class="flex">
+                                <el-input v-model="tableDataForm[key]" />
+                                <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
+                            </div>
+                            <!-- 百度坐标 -->
+                            <div v-else-if="FieldTypeChecker.isBdmapLnglatField(item)" class="flex">
+                                <el-input v-model="tableDataForm[key]" />
+                                <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
+                            </div>
+                            <!-- 高德坐标 -->
+                            <div v-else-if="FieldTypeChecker.isGdmapLnglatField(item)" class="flex">
+                                <el-input v-model="tableDataForm[key]" />
+                                <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
+                            </div>
+                            <!-- 月份 -->
+                            <el-date-picker v-else-if="FieldTypeChecker.isMonthField(item)" v-model="tableDataForm[key]"
+                                type="month" placeholder="选择月份" :format="`YYYY-MM`" :value-format="`YYYY-MM`" />
+                            <!-- 文本域 -->
+                            <el-input v-else-if="FieldTypeChecker.isTextareaField(item) == 3"
+                                v-model="tableDataForm[key]" style="width: 100%" placeholder="请输入" show-word-limit
+                                type="textarea" />
+                            <!-- 短输入框 -->
+                            <!-- <el-input v-else-if="FieldTypeChecker.isTextareaField(item) == 1"
+                                v-model="tableDataForm[key]" width="50" placeholder="段短短" /> -->
+                            <!-- 下拉框/单-多选框: 这个放最后 -->
+                            <template v-else-if="FieldTypeChecker.isSelectField(item)">
+                                <!-- 下拉框 -->
+                                <el-select v-if="Object.entries(item.relative_list).length > 4" :placeholder="'不限'"
+                                    :disabled="isEditable(item.auth)" :multiple="(!!item.relative_multiple)"
+                                    v-model="tableDataForm[key]" clearable class="input-width">
+                                    <el-option v-if="item.relative_list"
+                                        @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
+                                        v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
+                                        :label="item2[1]" :value="item2[0]" />
+                                </el-select>
+                                <template v-else>
+                                    <!-- 多选框 -->
+                                    <el-checkbox-group v-if="(!!item.relative_multiple)" v-model="tableDataForm[key]"
+                                        size="default">
+                                        <el-checkbox-button v-for="(item2, index) in Object.entries(item.relative_list)"
+                                            :key="index" :label="item2[0]">
+                                            {{ item2[1] }}
+                                        </el-checkbox-button>
+                                    </el-checkbox-group>
+                                    <!-- 单选框 -->
+                                    <el-radio-group v-else v-model="tableDataForm[key]" size="default">
+                                        <el-radio-button v-if="item.relative_list"
+                                            @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
+                                            v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
+                                            :label="item2[0]">{{ item2[1] }}</el-radio-button>
+                                    </el-radio-group>
+                                </template>
+                            </template>
+
+                            <!-- 默认整行输入框 -->
+                            <el-input v-else :disabled="isEditable(item.auth)" v-model="tableDataForm[key]" />
+                            <!-- 描述 -->
+                            <span v-if="fields[key].vi_des" v-html="fields[key].vi_des"
+                                class="text-xs text-gray font-italic">
+                            </span>
+                        </el-form-item>
+                    </template>
+                </el-form>
+            </el-tab-pane>
+        </el-tabs>
+        <div class="pt5">
+            <el-button type="primary" @click="handleSubmit">提交</el-button>
+        </div>
+    </ContentWrap>
+
+    <DialogSelect v-model="dataDialogVisible" :title="tableSelectData?.table?.table_name_cn + '选择'">
+    </DialogSelect>
+</template>
+
+<script setup lang="ts">
+import {
+    FieldTypeChecker,
+    isRequired, formatValue,
+    isEditable, fileToBinary,
+    objToFormData, getFullImageUrl,
+    getTableSelectNamePath,
+    formatTableSelectData
+} from "@/utils";
+import { ref, computed, provide, onMounted, shallowRef } from 'vue';
+import { ContentWrap } from "@/components/ContentWrap";
+import request from '@/axios';
+import { useRoute, useRouter } from "vue-router";
+import { SUCCESS_CODE } from '@/constants';
+import { Plus } from '@element-plus/icons-vue';
+import { Editor } from '@/components/Editor';
+import TceUpload from "@/components/MyComponent/Upload.vue";
+import DialogSelect from '@/components/MyComponent/DialogSelect.vue';
+import {
+    ElButton,
+    ElForm,
+    ElMessage,
+    ElSelect,
+    ElOption,
+    ElFormItem,
+    ElInput,
+    ElDatePicker,
+    ElDivider,
+    ElUpload,
+    ElIcon,
+    ElTabs,
+    ElTabPane,
+    ElSwitch,
+    ElRadioGroup,
+    ElRadioButton,
+    ElCheckboxGroup,
+    ElCheckboxButton
+} from 'element-plus';
+import { editTableRowGetApi, editTableRowPostApi, getTableSelectDataApi } from '@/api/table/tableApi';
+import { getFileUploadSliceGuidApi, uploadFileApi } from "@/api/other";
+// 导入element 图标
+import { MapLocation } from '@element-plus/icons-vue';
+import type { UploadProps } from 'element-plus';
+import { IDomEditor } from "@wangeditor/editor";
+
+const route = useRoute();
+const router = useRouter()
+
+let rules = ref({});
+
+// 表格添加时的表单数据
+const tableData = ref();
+const tableDataForm = ref({});
+
+// loading
+const loading = ref(false);
+
+const tableFormEl = ref(null); // 表格的ref 校验表单用
+const editorRef = ref(null) // 富文本编辑器ref
+
+// 是否是编辑，否则是添加
+const isEdit = ref(false);
+if (route.query.id) {
+    isEdit.value = true;
+}
+
+// 当前激活的标签页
+const activeTab = ref('0');
+// 数据选择弹窗状态
+const dataDialogVisible = ref(false);
+// 数据选择弹窗数据
+const tableSelectData = ref({});
+// 数据选择弹窗表名
+const tableSelectNamePath = ref('');
+// 数据选择弹窗表单项字段
+const tableSelectField = ref('');
+// 记录点击后的数据，用于回显
+const tableSelectObjData = ref<any[]>([])
+
+// 弹窗选择点击事件
+const tableSelectHandle = (row: any) => {
+    // console.log('触发了上级组件中的函数', row);
+    // searchForm.value[tableSelectField.value] = row.id
+    tableDataForm.value[tableSelectField.value] = row[tableSelectField.value] ? row[tableSelectField.value] : row.id
+    tableSelectObjData.value.push(row) // 记录点击后的数据，用于回显
+
+    // 关闭弹窗
+    dataDialogVisible.value = false
+};
+
+// 提供给下级组件
+provide('triggerFunction', tableSelectHandle);
+provide('tableSelectNamePath', tableSelectNamePath);
+
+
+
+getFormData()
+
+
+
+
+import { DomEditor } from '@wangeditor/editor'
+onMounted(() => {
+    // console.log(editorRef.value);
+    // const toolbar = DomEditor.getToolbar(editorRef.value)
+    // console.log(toolbar);
+    // const curToolbarConfig = toolbar.getConfig()
+    // curToolbarConfig.insertKeys
+    // curToolbarConfig.insertKeys = {
+    //   index: 5, // 插入的位置，基于当前的 toolbarKeys
+    //   keys: ['menu-key1', 'menu-key2']
+    // }
+    // console.log(curToolbarConfig.toolbarKeys) // 当前菜单排序和分组
+})
+
+// 表格弹窗-选择数据
+async function tableDialogSelectHandle(data: any) {
+    // 获取表名
+    console.log(data);
+    tableSelectNamePath.value = getTableSelectNamePath(data)
+    // console.log(tableSelectNamePath.value, 'xxxxxxxxxxxxx2');
+    // return
+
+    // 仅仅为了回显表名
+    let res = await getTableSelectDataApi(tableSelectNamePath.value)
+    tableSelectData.value = res.data
+    // 显示弹窗
+    dataDialogVisible.value = true
+    // 记录当前表单项字段，用于选择后数据填充到表单项
+    tableSelectField.value = data.my_column_name
+}
+
+
+// 获取数据
+async function getFormData() {
+    loading.value = true
+    let res;
+    // 编辑
+    if (isEdit.value) {
+        console.log('编辑');
+        let { tableName, id, uri } = route.query
+        if (uri) {
+            res = await request.get({ url: uri as string })
+        } else {
+            if (!tableName) return ElMessage.error('参数错误:tableName为空')
+            res = await editTableRowGetApi(tableName as string, id as string);
+        }
+        tableDataForm.value = res.data.target // 将数据填充到表单
+        console.log(tableDataForm.value, 'tableDataForm.value');
+        formatValue(tableDataForm) // 将某些字段值转换为字符串以解决下拉选择框回显问题
+        // 头像
+        if (res.data.target.wx_image) {
+            tableDataForm.value.wx_image_imageUrl = getFullImageUrl(res.data.target.wx_image)
+        }
+        
+    } else { // 添加
+        console.log('添加');
+        res = await request.get({ url: route.query.uri as string })
+        // return
+        // 添加默认值
+        tableDataForm.value = {}
+        for (const key in res.data.form_fields) {
+            if (res.data.form_fields[key].my_column_default) {
+                tableDataForm.value[key] = res.data.form_fields[key].my_column_default
+            }
+        }
+        // 表名
+        tableDataForm.value.my_table_name = res.data?.target?.my_table_name
+    }
+    // 确保 relative_multiple 字段初始化为数组, 为了解决下拉选择框回显问题
+    for (const key in res.data.form_fields) {
+        if (res.data.form_fields[key].relative_multiple) {
+            if (!Array.isArray(tableDataForm.value[key])) {
+                tableDataForm.value[key] = []
+            }
+        }
+    }
+    // 
+    if (res.code == SUCCESS_CODE) {
+        tableData.value = res.data
+        initRules() // 初始化校验规则
+        // console.log(tableData.value);
+        // 设置标题
+        document.title = (isEdit.value ? '编辑' : '添加') + tableData.value.table.table_name_cn;
+    } else {
+        ElMessage({
+            message: `失败: ${res.msg}`,
+            type: 'warning',
+        })
+    }
+    loading.value = false
+}
+
+// 表格命令：添加数据
+async function tableCMD_HandleAddSubmit() {
+    let uri = tableData.value.form_action
+    // url = url.replace(import.meta.env.VITE_API_BASE_PATH_URL, '')
+    let res = await request.post({ url: uri, data: tableDataForm.value })
+    if (res.code == 0) {
+        ElMessage({
+            message: `${res.msg}`,
+            type: 'success',
+            duration: 1500,
+        })
+        router.back()
+    } else {
+        ElMessage({
+            message: `失败: ${res.msg}`,
+            type: 'warning',
+        })
+    }
+}
+
+// 初始化表单规则
+function initRules() {
+    for (const key in tableData.value?.form_fields) {
+        if (tableData.value?.form_fields.hasOwnProperty(key)) {
+            const field = tableData.value.form_fields[key];
+            if (isRequired(field)) {
+                rules.value[key] = [{ required: true, message: '此项必填', trigger: 'blur' }];
+            }
+        }
+    }
+    // console.log('表单规则初始化:' , rules.value, tableData.value);
+}
+
+// 提交表单
+async function handleSubmit() {
+    // console.log('tableDataForm.value', tableDataForm.value)
+    // console.log(tableFormEl.value[0].validate());
+    console.log('rules', rules)
+
+    // 批量验证表单
+    // taps 会把表单分成多个，通过 activeTab 来当下标来验证表单
+    for (let i = 0; i < Object.keys(groupedFields.value).length; i++) {
+        try {
+            await tableFormEl.value?.[i].validate()
+        } catch (error) {
+            activeTab.value = i.toString() // 切换到未通过验证的表单
+            return // 只要有一个表单未通过验证剩下的就不再验证了
+        }
+    }
+    // return
+    if (isEdit.value) { // 编辑提交
+        let res;
+        // 提交前处理数据
+        tableDataForm.value.industry ? tableDataForm.value.industry = tableDataForm.value.industry.join(',') : '';
+        if (tableData.value.form_action) {
+            res = await request.post({
+                url: tableData.value.form_action,
+                data: tableDataForm.value
+            })
+        } else {
+            let { tableName, id } = route.query
+            res = await editTableRowPostApi(tableName as string, id as string, tableDataForm.value)
+        }
+        if (res.code == SUCCESS_CODE) {
+            ElMessage({
+                type: 'success',
+                message: res.msg,
+            })
+            router.back()
+        }
+    } else { // 添加提交
+        tableCMD_HandleAddSubmit();
+    }
+}
+
+// 上传成功
+const handleAvatarSuccess: UploadProps['onSuccess'] = (
+    response,
+    uploadFile,
+    key
+) => {
+    const imageUrl = URL.createObjectURL(uploadFile.raw!);
+    tableDataForm.value[key + '_imageUrl'] = imageUrl;
+}
+
+// 上传前
+const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
+    if (!(rawFile.type === 'image/jpeg' || rawFile.type === 'image/png' || rawFile.type === 'image/svg+xml')) {
+        ElMessage.error('头像图片必须是 JPG、PNG 或 SVG 格式!')
+        return false
+    } else if (rawFile.size / 1024 / 1024 > 2) {
+        ElMessage.error('头像图片大小不能超过 2MB!')
+        return false
+    }
+    return true
+}
+
+// 上传文件
+const createUploadHandler = (fieldName: string) => {
+    const uploadAvatar: UploadProps['httpRequest'] = async ({ file, onSuccess, onError }) => {
+        try {
+            const { data: { fileUploadSliceGuid } } = await getFileUploadSliceGuidApi();
+            // console.log(fileUploadSliceGuid);
+            const fileContent: ArrayBuffer = await fileToBinary(file);
+            let data = objToFormData({
+                fileName: file.name,
+                fileUploadSliceGuid,
+                fileSize: file.size,
+                table_name: tableData.value.table_name,
+                field_name: fieldName,
+                resize_width: 0,
+                fileContent: new Blob([fileContent], { type: file.type }),
+            })
+            // console.log(data);
+            const response = await uploadFileApi(data);
+            // console.log(response);
+            if (response.code == SUCCESS_CODE) {
+                onSuccess(response.data);
+                tableDataForm.value[fieldName] = response.data.file;
+            } else {
+                onError(new Error(response.msg));
+            }
+        } catch (error) {
+            onError(error);
+        }
+    };
+    return uploadAvatar;
+}
+
+// 计算属性：将表单字段按照编辑标签分组
+const groupedFields = computed(() => {
+    const groups = {};
+    if (tableData.value && tableData.value.form_fields) {
+        // 遍历所有表单字段
+        for (const [key, field] of Object.entries(tableData.value.form_fields)) {
+            // 获取字段的编辑标签，如果没有则默认为'其他'
+            // const tag = field.edit_tag || '其它';
+            const tag = field.edit_tag || `基础`;
+            // const tag = field.edit_tag || `${isEdit.value ? '编辑' : '添加'}表单`;
+            // 如果该标签的分组还不存在，则创建一个新的对象
+            if (!groups[tag]) {
+                groups[tag] = {};
+            }
+            // 将字段添加到对应的分组中
+            groups[tag][key] = field;
+        }
+    }
+    // 返回分组后的字段
+    return groups;
+});
+
+// 数据类型自动推断数据库字段类型
+function inferFieldType(typeStr: string) {
+    let inferredType = '';
+    switch (typeStr) {
+        // case 'auto':
+        //     inferredType = 'int(10) unsigned';
+        //     break;
+        case 'month':
+            inferredType = 'varchar(7)';
+            break;
+        case 'bdmap':
+        case 'amap':
+        case 'qqmap_lnglat':
+        case 'bdmap_lnglat':
+            inferredType = 'varchar(40)';
+            break;
+        case 'unknown_file':
+        case 'video':
+        case 'image':
+            inferredType = 'varchar(255)';
+            break;
+        case 'long_content':
+            inferredType = 'longtext';
+            break;
+        // default:
+        //     inferredType = 'varchar(255)';
+    }
+    // console.log(typeStr,inferredType);
+    tableDataForm.value['my_column_type'] = inferredType;
+};
+
+
+// 跳转新页面获取坐标
+function handleGotoMap(item: any) {
+    if (FieldTypeChecker.isQqmapLnglatField(item)) {
+        window.open('https://lbs.qq.com/getPoint/')
+    } else if (FieldTypeChecker.isBdmapLnglatField(item)) {
+        window.open('https://api.map.baidu.com/lbsapi/getpoint/index.html')
+    } else if (FieldTypeChecker.isGdmapLnglatField(item)) {
+        window.open('https://map.geoq.cn/')
+    }
+}
+</script>
+
+<style scoped>
+.avatar-uploader .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s, height 0.5s;
+}
+
+.fade-enter,
+.fade-leave-to
+
+/* .fade-leave-active in <2.1.8 */
+    {
+    opacity: 0;
+    height: 0;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    height: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+    opacity: 1;
+    height: auto;
+}
+</style>
+
+<style>
+.avatar-uploader .el-upload {
+    border: 1px dashed var(--el-border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: var(--el-transition-duration-fast);
+}
+
+.avatar-uploader .el-upload:hover {
+    border-color: var(--el-color-primary);
+}
+
+.el-icon.avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 178px;
+    height: 178px;
+    text-align: center;
+}
+</style>

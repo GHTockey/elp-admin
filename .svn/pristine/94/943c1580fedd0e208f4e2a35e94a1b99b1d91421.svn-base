@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia';
 import { usePermissionStore } from '@/store/modules/permission';
 // const { admin } = storeToRefs(usePermissionStore());
 
-// TODO: 类中的 admin 会在 app.vue 中初始化, 但是有的时候还没有初始化完成就开始调用类中的方法(几率较低), 导致 admin 为 null；待解决
+
 class SacManage {
   static admin: any = null;
   // static admin = storeToRefs(usePermissionStore()).admin.value;
@@ -108,7 +108,7 @@ class SacManage {
       return false;
     }
 
-    // console.log('SacManage.admin', JSON.parse(JSON.stringify(SacManage.admin)))
+    // console.log('SacManage.admin', SacManage.admin)
     // return
     const config = Rule.getAuthCharConfig(SacManage.admin, field, auth_char);
     // console.log('config',config)

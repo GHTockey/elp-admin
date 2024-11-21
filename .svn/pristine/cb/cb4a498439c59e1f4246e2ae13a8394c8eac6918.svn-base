@@ -615,6 +615,7 @@ getFormData();
 // 富文本编辑器内容改变
 function editorChangeHandle(key: string) {
     // console.log('editorChangeHandle', key);
+
     // 去除所有空格 
     // 只去除文本节点中的空格
     tableDataForm.value[key] = tableDataForm.value[key].replace(/>(\s+)</g, '><').replace(/\s{2,}/g, ' ');
@@ -864,9 +865,8 @@ function initRules() {
             //根据field.validate_js: string的数据来生成表单规则 [[start]]
             // 判断field.validate_js是否有 required
             // console.log('field', field);
-            if ((field.validate_js?.includes('required') || isRequired(field)) && SacManage.has_auth_edit_field(field)) { // 必填项 [已配置客户端检验 或 数据库不可空 且 可编辑]
-            // if (field.validate_js?.includes('required') || isRequired(field)) { // 必填项 [已配置客户端检验 或 数据库不可空]
-            // if (field.validate_js?.includes('required')) { // 必填项 [已配置客户端检验]
+            // if (field.validate_js?.includes('required') || isRequired(field)) { // 必填项
+            if (field.validate_js?.includes('required')) { // 必填项
                 if (!rules.value[key]) rules.value[key] = [];
                 rules.value[key].push({ required: true, message: '此项必填！', trigger: 'blur' });
             }
