@@ -264,8 +264,9 @@
                     <!-- 表格列 -->
                     <el-table-column v-for="(item, index) in Object.values(tableData.cols_show)" :key="index"
                         :prop="item.my_column_name" :label="item.vi_name" :sortable="!!item.sortable"
-                        :width="tableColWidth?.[item.my_column_name] ||
-                            getColumnWidth(item.my_column_name, tableData.rows, index === Object.values(tableData.cols_show).length - 1, item.vi_name)" :min-width="tableColWidth?.['default']">
+                        :width="FieldTypeChecker.isAvatarField(item) ? '130' :
+                            (tableColWidth?.[item.my_column_name] ||
+                                getColumnWidth(item.my_column_name, tableData.rows, index === Object.values(tableData.cols_show).length - 1, item.vi_name))" :min-width="tableColWidth?.['default']">
                         <template #default="scope">
                             <div>
                                 <!--  行为类型/角色/对象 -->
@@ -291,12 +292,25 @@
                                     </template>
                                 </template>
                                 <!-- 图片 -->
-                                <a v-else-if="FieldTypeChecker.isAvatarField(item)"
+                                <!-- <a v-else-if="FieldTypeChecker.isAvatarField(item)"
                                     :href="scope.row[item.my_column_name] ? getFullImageUrl(scope.row[item.my_column_name]) : ''"
                                     target="_blank">
-                                    <img style="width: 40px;"
+                                    <img style="width: 80px;"
                                         :src="scope.row[item.my_column_name] ? getFullImageUrl(scope.row[item.my_column_name]) : ''" />
-                                </a>
+                                </a> -->
+                                <template v-else-if="FieldTypeChecker.isAvatarField(item)">
+                                    <el-image style="width: 100px;"
+                                        @click="imgPreview = (scope.row[item.my_column_name] ? getFullImageUrl(scope.row[item.my_column_name]) : '').split(',')"
+                                        :src="(scope.row[item.my_column_name] ? getFullImageUrl(scope.row[item.my_column_name]) : '').split(',')[0]"
+                                        :preview-src-list="imgPreview" fit="cover" preview-teleported
+                                        hide-on-click-modal>
+                                        <!-- <template #error>
+                                            <div class="">
+                                                加载失败: {{ scope.row[item.my_column_name] }}
+                                            </div>
+                                        </template> -->
+                                    </el-image>
+                                </template>
                                 <!-- 列表页编辑 可编辑的项 ajax_field -->
                                 <template v-else-if="!!item.ajax_field">
                                     <template v-if="scope.row[item.my_column_name]">
@@ -417,7 +431,7 @@ import {
     ElRow, ElCol, ElDivider, ElDialog,
     ElAvatar, ElMessage, ElMessageBox,
     ElEmpty, ElPopover, ElPopconfirm,
-    ElButtonGroup, ElIcon, ElSwitch, ElTag
+    ElButtonGroup, ElIcon, ElSwitch, ElTag, ElImage
 } from 'element-plus';
 import { ContentWrap } from "@/components/ContentWrap";
 import request from '@/axios'
@@ -436,7 +450,6 @@ import { EditPen } from '@element-plus/icons-vue'
 
 // 图标
 import { useIcon } from '@/hooks/web/useIcon';
-import axios from "@/axios";
 
 
 const route = useRoute();
@@ -451,6 +464,8 @@ const tagsViewStore = useTagsViewStore();
 //     document.title = tableData.value?.table?.table_name_cn
 // })
 
+// 图片预览
+const imgPreview = ref([])
 
 // 分页
 const offset = ref(0) // 偏移量
