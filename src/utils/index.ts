@@ -566,6 +566,7 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
     return 'auto';
   }
 
+  const MAX_WIDTH = 350; // 设定最高宽度
   let contentMaxWidth = 0;
   // 根据 headerValue 计算默认宽度
   const defaultWidth = headerValue.length * 16 + 45; // 假设每个字符宽度为16px，padding为45px (留出padding是为了有的表头内容还有排序箭头)
@@ -577,7 +578,13 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
     if (typeof value === 'string') {
       // 检查值是否为链接或相对地址
       if (value.startsWith('http') || value.startsWith('/')) {
-        contentMaxWidth = value.length * 8;
+        if (value.match(/\.(jpeg|jpg|gif|png)$/)) { // 检查是否是图片地址
+          console.log('key', key, ' value', value)
+          contentMaxWidth = 70;
+        } else {
+          contentMaxWidth = value.length * 8;
+        }
+        // contentMaxWidth = value.length * 8;
         // contentMaxWidth = Math.max(contentMaxWidth, defaultWidth); 
       } else {
         // 计算每个单元格内容的宽度
@@ -603,6 +610,7 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
   // console.log('表头宽度', headerValue, defaultWidth)
   // console.log('内容宽度', contentMaxWidth)
 
-  return contentMaxWidth > defaultWidth ? contentMaxWidth : defaultWidth;
-  // return contentMaxWidth;
+  // return contentMaxWidth > defaultWidth ? contentMaxWidth : defaultWidth;
+  const finalWidth = contentMaxWidth > defaultWidth ? contentMaxWidth : defaultWidth;
+  return finalWidth > MAX_WIDTH ? MAX_WIDTH : finalWidth; // 使用最高宽度限制
 }

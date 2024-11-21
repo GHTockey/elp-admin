@@ -44,20 +44,20 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       progress(),
       env.VITE_USE_ALL_ELEMENT_PLUS_STYLE === 'false'
         ? createStyleImportPlugin({
-            resolves: [ElementPlusResolve()],
-            libs: [
-              {
-                libraryName: 'element-plus',
-                esModule: true,
-                resolveStyle: (name) => {
-                  if (name === 'click-outside') {
-                    return ''
-                  }
-                  return `element-plus/es/components/${name.replace(/^el-/, '')}/style/css`
+          resolves: [ElementPlusResolve()],
+          libs: [
+            {
+              libraryName: 'element-plus',
+              esModule: true,
+              resolveStyle: (name) => {
+                if (name === 'click-outside') {
+                  return ''
                 }
+                return `element-plus/es/components/${name.replace(/^el-/, '')}/style/css`
               }
-            ]
-          })
+            }
+          ]
+        })
         : undefined,
       // EslintPlugin({
       //   cache: false,
@@ -87,8 +87,9 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       //     `
       //     })
       //   : undefined,
-      ViteEjsPlugin({
+      ViteEjsPlugin({ // 全局加载时的标题
         title: env.VITE_APP_TITLE
+        // title: 'env.VITE_APP_TITLE666'
       }),
       UnoCSS(),
       // sveltekit(),

@@ -262,15 +262,32 @@
                         item?.class == 'coding-ajax-batch-checked-download' ||
                         item?.class == 'coding-ajax-delete-batch')" />
                     <!-- 表格列 -->
+                    <!-- item 是字段的数据； scope.row 为行数据 -->
                     <el-table-column v-for="(item, index) in Object.values(tableData.cols_show)" :key="index"
                         :prop="item.my_column_name" :label="item.vi_name" :sortable="!!item.sortable"
-                        :width="FieldTypeChecker.isAvatarField(item) ? '130' :
-                            (tableColWidth?.[item.my_column_name] ||
-                                getColumnWidth(item.my_column_name, tableData.rows, index === Object.values(tableData.cols_show).length - 1, item.vi_name))" :min-width="tableColWidth?.['default']">
+                        :width="tableColWidth?.[item.my_column_name] ||
+                            getColumnWidth(item.my_column_name, tableData.rows, index === Object.values(tableData.cols_show).length - 1, item.vi_name)" :min-width="tableColWidth?.['default']">
                         <template #default="scope">
                             <div>
-                                <!--  行为类型/角色/对象 -->
-                                <span v-if="FieldTypeChecker.isSelectField(item)">
+                                <!-- 列渲染按钮 -->
+                                <template v-if="item?.list_toggleable == 1 && item?.relative_list">
+                                    <div>
+                                        <!-- {{ Object.entries(item.relative_list) }} -->
+                                        <!-- {{ scope.row[item.my_column_name] }} -->
+                                          <!-- {{ scope.row }} -->
+
+                                        <el-button-group>
+                                            <el-button
+                                                :type="scope.row[item.my_column_name] == radidItem[0] ? 'primary' : ''"
+                                                size="small"
+                                                @click="tableColCMD_Handler(`/Table/toggle/${item.my_table_name}/${item.my_column_name}/${scope.row.id}/${radidItem[0]}`)"
+                                                v-for="(radidItem, index) in Object.entries(item.relative_list)"
+                                                :key="index">{{ radidItem[1] }}</el-button>
+                                        </el-button-group>
+                                    </div>
+                                </template>
+                                <!-- relative_list 数据 -->
+                                <span v-else-if="FieldTypeChecker.isSelectField(item)">
                                     {{
                                         tableData.cols_show?.[item.my_column_name]?.relative_list?.[scope.row[item.my_column_name]]
                                     }}
@@ -292,23 +309,24 @@
                                     </template>
                                 </template>
                                 <!-- 图片 -->
-                                <!-- <a v-else-if="FieldTypeChecker.isAvatarField(item)"
-                                    :href="scope.row[item.my_column_name] ? getFullImageUrl(scope.row[item.my_column_name]) : ''"
-                                    target="_blank">
-                                    <img style="width: 80px;"
-                                        :src="scope.row[item.my_column_name] ? getFullImageUrl(scope.row[item.my_column_name]) : ''" />
-                                </a> -->
                                 <template v-else-if="FieldTypeChecker.isAvatarField(item)">
-                                    <el-image style="width: 100px;"
+                                    <el-image style="height: 40px;"
                                         @click="imgPreview = (scope.row[item.my_column_name] ? getFullImageUrl(scope.row[item.my_column_name]) : '').split(',')"
                                         :src="(scope.row[item.my_column_name] ? getFullImageUrl(scope.row[item.my_column_name]) : '').split(',')[0]"
                                         :preview-src-list="imgPreview" fit="cover" preview-teleported
                                         hide-on-click-modal>
-                                        <!-- <template #error>
-                                            <div class="">
-                                                加载失败: {{ scope.row[item.my_column_name] }}
+                                        <template #error>
+                                            <!-- 有值 -->
+                                            <div v-if="scope.row[item.my_column_name]"
+                                                class="bg-[#f5f7fa] text-[#abaeb3] text-center px-1 rounded-md">
+                                                加载失败
+                                                <!-- {{ scope.row[item.my_column_name] }} -->
                                             </div>
-                                        </template> -->
+                                            <!-- 无值 -->
+                                            <div v-else>
+
+                                            </div>
+                                        </template>
                                     </el-image>
                                 </template>
                                 <!-- 列表页编辑 可编辑的项 ajax_field -->
@@ -431,7 +449,8 @@ import {
     ElRow, ElCol, ElDivider, ElDialog,
     ElAvatar, ElMessage, ElMessageBox,
     ElEmpty, ElPopover, ElPopconfirm,
-    ElButtonGroup, ElIcon, ElSwitch, ElTag, ElImage
+    ElButtonGroup, ElIcon, ElSwitch, ElTag, ElImage,
+    ElRadioGroup, ElRadioButton
 } from 'element-plus';
 import { ContentWrap } from "@/components/ContentWrap";
 import request from '@/axios'
@@ -640,11 +659,18 @@ provide('tableSelectNamePath', tableSelectNamePath); // 弹窗选择-当前表�
 // console.log("getExternalFileValue('sort')", getExternalFileValue('sort'))
 
 
-// 获取表格列宽度 [public/table-col.json]
-async function getTableColWidth() {
-    tableColWidth.value = await getExternalFileValue()
-};
-
+// 上/下架 handler
+async function tableColCMD_Handler(uri: any, reqData?: any) {
+    // console.log('uri',uri)
+    // return
+    let res = await request.post({ url: uri, data: reqData })
+    if (res.code == SUCCESS_CODE) {
+        ElMessage({
+            message: res.msg,
+            type: 'success',
+        })
+    }
+}
 
 // 表格弹窗-选择数据
 async function tableDialogSelectHandle(data: any) {
