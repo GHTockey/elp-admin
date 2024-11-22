@@ -20,7 +20,7 @@
                                 </el-form-item>
                             </template>
                         </transition>
-                        <el-form-item :label="item.vi_name" :prop="key" v-if="key != 'unknown_file_accept'">
+                        <el-form-item :label="item.vi_name" :prop="key" v-if="key != 'unknown_file_accept'" data-testttt="form-item">
                             <!-- 日期选择器 -->
                             <el-date-picker v-if="FieldTypeChecker.isDateField(item)" :type="item.my_column_type"
                                 :disabled="!SacManage.has_auth_edit_field(item)" range-separator="-"
@@ -98,10 +98,10 @@
                             <!-- 弹框选择 -->
                             <template v-else-if="FieldTypeChecker.isPopupField(item)">
                                 <div class="flex">
-                                    <el-input v-model="tableDataForm[key]" :disabled="!SacManage.has_auth_edit_field(item)"
+                                    <el-input v-model="tableDataForm[key]" class="popup-select-input" :disabled="!SacManage.has_auth_edit_field(item)"
                                         :placeholder="item.placeholder_search">
                                         <!-- 数据回显 -->
-                                        <template #prepend>
+                                        <template #prefix>
                                             <template v-if="item.relative_col_show">
                                                 <span v-for="showKey in item.relative_col_show.split(',')">
                                                     {{ computedShowValue(item, key, showKey) }}
@@ -331,16 +331,16 @@
                                 <!-- 弹框选择 -->
                                 <template v-else-if="FieldTypeChecker.isPopupField(item)">
                                     <div class="flex">
-                                        <el-input v-model="tableDataForm[key]"
+                                        <el-input v-model="tableDataForm[key]"class="popup-select-input"
                                             :placeholder="item.placeholder_search || '请选择'"
                                             :disabled="!SacManage.has_auth_edit_field(item)">
                                             <!-- 数据回显 -->
-                                            <template #prepend v-if="!!item.relative_col_show">
+                                            <template #prefix v-if="!!item.relative_col_show">
                                                 <span v-for="showKey in item.relative_col_show?.split(',')">
                                                     {{ computedShowValue(item, key, showKey) }}
                                                 </span>
                                             </template>
-                                            <template #prepend v-else>
+                                            <template #prefix v-else>
                                                 {{ computedShowValue(item, key) }}
                                             </template>
                                             <template #append>

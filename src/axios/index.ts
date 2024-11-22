@@ -14,7 +14,7 @@ const request = (option: AxiosConfig) => {
     responseType: responseType,
     headers: {
       // 'Content-Type': CONTENT_TYPE,
-      'Content-Type': isFormData ? 'multipart/form-data' : CONTENT_TYPE,
+      'Content-Type': isFormData ? 'multipart/form-data' : 'application/json',
       // [userStore.getTokenKey ?? 'Authorization']: userStore.getToken ?? '',
       ...headers
     },

@@ -15,7 +15,7 @@ const { loadStart, loadDone } = usePageLoading() // 页面加载动画
 // 路由前置守卫
 router.beforeEach(async (to, from, next) => {
   start()
-  loadStart()
+  // loadStart()
   const permissionStore = usePermissionStoreWithOut()
   const appStore = useAppStoreWithOut()
   const userStore = useUserStoreWithOut()
@@ -69,5 +69,5 @@ router.beforeEach(async (to, from, next) => {
 router.afterEach((to) => {
   useTitle(to?.meta?.title as string)
   done() // 结束Progress
-  loadDone()
+  // loadDone()
 })

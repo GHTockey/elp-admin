@@ -558,39 +558,53 @@ export const getNavsFirstLevelPath = computed(() => (navs: any[]) => {
   return navs.map(item => item.path);
 });
 
+
 // 计算列宽
 // 优先表头宽度[为了不让表头内容换行], 其次单元格内容宽度
 // 最后一列不计算宽度[默认占满剩余宽度]
-export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean = false, headerValue: string) {
+// 参数：key: 列名, cols: 列数据, isLastColumn: 是否是最后一列, headerValue: 表头内容,  relative_数据
+export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean = false, headerValue: string, relative_list?: string) {
+  // console.log('key', key)
   if (isLastColumn) {
     return 'auto';
   }
 
   const MAX_WIDTH = 350; // 设定最高宽度
-  let contentMaxWidth = 0;
+  let contentMaxWidth = 0; // 初始化
   // 根据 headerValue 计算默认宽度
   const defaultWidth = headerValue.length * 16 + 45; // 假设每个字符宽度为16px，padding为45px (留出padding是为了有的表头内容还有排序箭头)
 
+  // console.log('cols', cols, 'key', key, 'headerValue', headerValue, 'relative')
   cols.forEach(row => {
+    // console.log('row', row)
     const value = row[key];
     if (value === undefined || value === null) return;
 
-    if (typeof value === 'string') {
+
+    if (relative_list) {
+      // 此时 value 是 relative_list 的 key
+      let tempVal = '' + (relative_list[value] || value);
+      // console.log('tempVal', tempVal)
+      const englishAndNumbers = tempVal.replace(/[\u4e00-\u9fa5]/g, '').length;
+      const chineseCharacters = tempVal.length - englishAndNumbers;
+      const width = englishAndNumbers * 12 + chineseCharacters * 26; // 前者是英文和数字的宽度，后者是中文的宽度
+      contentMaxWidth = Math.max(contentMaxWidth, width); // 每次循环结束取最大值(同一列的数据有的是两个字，有的是三个字，取最大的)
+    } else if (typeof value === 'string') {
       // 检查值是否为链接或相对地址
       if (value.startsWith('http') || value.startsWith('/')) {
-        if (value.match(/\.(jpeg|jpg|gif|png)$/)) { // 检查是否是图片地址
+        // 检查是否是图片地址 直接返回70
+        if (value.match(/\.(jpeg|jpg|gif|png)$/)) {
           // console.log('key', key, ' value', value)
           contentMaxWidth = 70;
         } else {
+          // 链接内容：每个字的宽度
+          // console.log('key', key, ' value', value)
           contentMaxWidth = value.length * 8;
         }
         // contentMaxWidth = value.length * 8;
         // contentMaxWidth = Math.max(contentMaxWidth, defaultWidth); 
       } else {
-        // 计算每个单元格内容的宽度
-        // const width = value.length * 10;
-        // contentMaxWidth = Math.max(contentMaxWidth, width);
-
+        // console.log('key', key, ' value', value)
         // 计算每个单元格内容的宽度
         const englishAndNumbers = value.replace(/[\u4e00-\u9fa5]/g, '').length;
         const chineseCharacters = value.length - englishAndNumbers;
@@ -598,14 +612,17 @@ export function getColumnWidth(key: string, cols: any[], isLastColumn: boolean =
         contentMaxWidth = Math.max(contentMaxWidth, width); // 每次循环结束取最大值(同一列的数据有的是两个字，有的是三个字，取最大的)
       }
     } else if (typeof value === 'number') {
+      // console.log('key', key, ' value', value)
       // 处理数字类型
       const width = value.toString().length * 16;
       contentMaxWidth = Math.max(contentMaxWidth, width);
     } else {
       // 处理其他类型，使用默认宽度
+      // console.log('key', key, ' value', value)
       contentMaxWidth = Math.max(contentMaxWidth, defaultWidth);
     }
   });
+
 
   // console.log('表头宽度', headerValue, defaultWidth)
   // console.log('内容宽度', contentMaxWidth)

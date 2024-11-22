@@ -78,4 +78,30 @@ body {
 .@{prefix-cls}-grey-mode {
   filter: grayscale(100%);
 }
+
+
+
+
+// 弹窗选择框的输入框样式
+.popup-select-input {
+  // width: 150px !important;
+
+  // 左边框距
+  // .el-input-group__prepend {
+  //   padding: 0 10px !important;
+  //   background-color: transparent;
+  // }
+  // 右边距
+  // .el-input-group__append {
+  //   padding: 0 15px !important;
+  // }
+  // 输入框
+  .el-input__inner {
+    width: 50px !important;
+  }
+  // 输入框头部内容
+  // .el-input__prefix-inner {
+  //   // background-color: red;
+  // }
+}
 </style>

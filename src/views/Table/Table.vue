@@ -21,7 +21,7 @@
                         <el-form-item :label="col.vi_name">
                             <!-- 日期选择器 -->
                             <template v-if="FieldTypeChecker.isDateField(col)">
-                                <el-date-picker :type="'datetimerange'"
+                                <el-date-picker :type="'datetimerange'" style="width: 220px;"
                                     :format="`YYYY-MM-DD ${col.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
                                     :value-format="`YYYY-MM-DD ${col.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
                                     range-separator="-" :start-placeholder="col.placeholder_search?.split(',')[0]"
@@ -62,18 +62,17 @@
                             <!-- 弹框选择 -->
                             <template v-else-if="FieldTypeChecker.isPopupField(col)">
                                 <div class="flex">
-                                    <el-input v-model="searchForm[key]" :placeholder="col.placeholder_search">
+                                    <!-- <el-button type="primary" disabled>Primary</el-button> -->
+                                    <el-input style="max-width: 600px" class="popup-select-input"
+                                        v-model="searchForm[key]" :placeholder="col.placeholder_search"
+                                        parser="5555555555555555555">
                                         <!-- 数据回显 -->
-                                        <template #prepend v-if="!!col.relative_col_show">
-                                            <span v-for="showKey in col.relative_col_show?.split(',')">
-                                                <!-- modelKey: {{ key }}
-                                                value: {{ searchForm[key] }}
-                                                showKey: {{ showKey }} -->
-                                                <!-- {{ tableSelectObjData?.filter(el => el[key] == searchForm[key]) }} -->
-                                                {{ computedShowValue(col, key, showKey) }}
-                                            </span>
+                                        <template #prefix v-if="!!col.relative_col_show">
+                                            <template v-for="showKey in col.relative_col_show?.split(',')">
+                                                <span>{{ computedShowValue(col, key, showKey) }}</span>
+                                            </template>
                                         </template>
-                                        <template #prepend v-else>
+                                        <template #prefix v-else>
                                             {{ computedShowValue(col, key) }}
                                         </template>
                                         <template #append>
@@ -246,15 +245,17 @@
                         </template>
                     </el-col>
                 </el-row>
+                <!-- document.querySelector('[data-tablename=sys_config]') -->
+                <!-- <div :data-tableName="tableData.table?.table_name || 'sys_config'">666</div> -->
 
                 <!-- 表格  通过 el-table-column 动态生成表格列，并且在每一列中动态绑定对应的行数据 -->
                 <!-- 动态生成表格列：使用 v-for 循环遍历 tableData.cols_show，并动态生成 el-table-column。
                     绑定列属性：使用 :prop="item.my_column_name" 动态绑定列的属性名称，这样每一列都会自动对应到 rows 中的相应字段。
                     显示数据：在 el-table-column 的 default 插槽中，通过 scope.row[item.my_column_name] 动态获取并显示每一行的对应列数据。 -->
-                <el-table :scrollbar-always-on="false" :data="tableData.rows" style="width: 100%" border
+                <el-table :scrollbar-always-on="false" stripe :data="tableData.rows" style="width: 100%" border
                     @header-dragend="tableColWidthDragHandle" sortable="custom" @sort-change="tableSortHandle"
                     max-height="calc(100vh - 200px)" id="tce_table" @selection-change="handleSelectionChange"
-                    class="tce_table">
+                    class="tce_table" :data-table-name="tableData?.table_name">
                     <!-- 复选框:根据tableData.table_cmds里是否有cmd_type == 1的 进行条件渲染 -->
                     <el-table-column type="selection" width="40" v-if="tableData.table_cmds.some(item =>
                         item.cmd_type == 1 ||
@@ -265,9 +266,12 @@
                     <!-- 表格列 -->
                     <!-- item 是字段的数据； scope.row 为行数据 -->
                     <el-table-column v-for="(item, index) in Object.values(tableData.cols_show)" :key="index"
-                        :prop="item.my_column_name" :label="item.vi_name" :sortable="!!item.sortable"
+                        :data-column-name="item.my_column_name" :prop="item.my_column_name" :label="item.vi_name"
+                        :sortable="!!item.sortable"
                         :width="tableColWidth?.[item.my_column_name] ||
-                            getColumnWidth(item.my_column_name, tableData.rows, index === Object.values(tableData.cols_show).length - 1, item.vi_name)" :min-width="tableColWidth?.['default']">
+                            getColumnWidth(item.my_column_name, tableData.rows, index === Object.values(tableData.cols_show).length - 1,
+                                item.vi_name, tableData.cols_show?.[item.my_column_name]?.relative_list)"
+                        :min-width="tableColWidth?.['default']">
                         <template #default="scope">
                             <div>
                                 <!-- 列渲染按钮 -->
@@ -276,7 +280,6 @@
                                         <!-- {{ Object.entries(item.relative_list) }} -->
                                         <!-- {{ scope.row[item.my_column_name] }} -->
                                         <!-- {{ scope.row }} -->
-
                                         <el-button-group>
                                             <el-button
                                                 :type="scope.row[item.my_column_name] == radidItem[0] ? 'primary' : ''"
@@ -290,7 +293,8 @@
                                 <!-- relative_list 数据 -->
                                 <span v-else-if="FieldTypeChecker.isSelectField(item)">
                                     {{
-                                        tableData.cols_show?.[item.my_column_name]?.relative_list?.[scope.row[item.my_column_name]]
+                                        tableData.cols_show?.[item.my_column_name]?.relative_list?.[scope.row[item.my_column_name]] ||
+                                        scope.row[item.my_column_name]
                                     }}
                                 </span>
                                 <!-- switch 单选 -->

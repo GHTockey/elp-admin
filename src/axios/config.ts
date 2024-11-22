@@ -12,7 +12,7 @@ const defaultRequestInterceptors = (config: InternalAxiosRequestConfig) => {
 
   // 临时添加param参数 '__API_TMP_TEST_82__': 1  测试用
   if (!config.params) config.params = {};
-  config.params['__API_TMP_TEST_82__'] = 1
+  config.params['__API_TMP_TEST_82__'] = 1 // 编译打包时去掉
 
   // 检查是否是绝对地址
   const isAbsoluteURL = config.url?.startsWith('http');

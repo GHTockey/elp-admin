@@ -24,7 +24,7 @@ VITE_SOURCEMAP=false
 VITE_OUT_DIR=dist-pro
 
 # 标题
-VITE_APP_TITLE=123
+VITE_APP_TITLE=ElementAdminPro
 
 # 是否包分析
 VITE_USE_BUNDLE_ANALYZER=true

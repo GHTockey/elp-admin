@@ -4,8 +4,11 @@ import type { NavData } from './types'
 
 // 获取navs数据
 export const getNavsApi = (): Promise<IResponse<NavData>> => {
-    return request.get({ url: '/Index/index' })
-    // return request.get({ url: '/Admin/Index/index' })
+    return request.get({
+        url: '/Index/index', headers: {
+            'Content-Type': 'application/json'
+        }
+    })
 }
 
 
