@@ -1,282 +1,51 @@
 <template>
-    <ContentWrap v-loading="loading">
-        <div class="pb5" v-if="showBack">
-            <el-button :type="'default'" @click="router.back()">返回上一级</el-button>
-        </div>
-
-        <!-- 单个表单 -->
-        <template v-if="Object.keys(groupedFields).length == 1">
-            <el-form :model="tableDataForm" v-loading="loading" :rules="rules" ref="tableFormEl" label-width="150px">
-                <template v-for="(item, key) in Object.values(groupedFields)[0]" :key="key">
-                    <!-- unknown_file_accept 条件渲染表单项 -->
-                    <transition name="fade">
-                        <template
-                            v-if="key == 'unknown_file_accept' && tableDataForm['my_data_type'] == 'unknown_file'">
-                            <el-form-item :label="item.vi_name" :prop="key" class="w-[90%]">
-                                <el-input v-model="tableDataForm[key]" class="input-width" />
-                                <span v-if="item.vi_des" v-html="item.vi_des"
-                                    class="text-xs text-gray font-italic"></span>
-                            </el-form-item>
-                        </template>
-                    </transition>
-                    <el-form-item :label="item.vi_name" :prop="key" v-if="key != 'unknown_file_accept'">
-                        <!-- 日期选择器 -->
-                        <el-date-picker v-if="FieldTypeChecker.isDateField(item)" :type="item.my_column_type"
-                            :disabled="!SacManage.has_auth_edit_field(item)" range-separator="-"
-                            :start-placeholder="item.placeholder_search?.split(',')[0]"
-                            :end-placeholder="item.placeholder_search?.split(',')[1]"
-                            :format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
-                            :value-format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
-                            :disabled-date="(time) => time.getTime() < Date.now() - 8.64e7" v-model="tableDataForm[key]"
-                            class="input-width" />
-
-                        <!-- 头像/图片上传 -->
-                        <template v-else-if="FieldTypeChecker.isAvatarField(item)">
-                            <!-- 多个图片上传 {{ item.relative_multiple }} -->
-                            <el-upload v-if="item.relative_multiple" class="upload-multiple"
-                                v-model:file-list="uploadFileList[key]" list-type="picture"
-                                :on-remove="handleRemove(key)" :http-request="createUploadHandler(item.my_column_name)"
-                                multiple :on-preview="handlePreview"
-                                :on-success="(response, file) => handleAvatarSuccess(response, file, key)"
-                                :before-upload="beforeAvatarUpload" accept="image/png,image/jpg,image/jpeg,.svg">
-                                <el-button type="primary">上传</el-button>
-                            </el-upload>
-
-                            <!-- 单个图片上传 -->
-                            <el-upload v-else class="avatar-uploader" :disabled="!SacManage.has_auth_edit_field(item)"
-                                :http-request="createUploadHandler(item.my_column_name)" :show-file-list="false"
-                                :on-success="(response, file) => handleAvatarSuccess(response, file, key)"
-                                :before-upload="beforeAvatarUpload" accept="image/png,image/jpg,image/jpeg,.svg">
-                                <img v-if="tableDataForm[key]"
-                                    :src="getFullImageUrl(tableDataForm[key + '_imageUrl'] || tableDataForm[key])"
-                                    class="avatar" />
-                                <el-icon v-else class="avatar-uploader-icon">
-                                    <Plus />
-                                </el-icon>
-                            </el-upload>
-                        </template>
-
-                        <!-- switch 切换 -->
-                        <el-switch v-else-if="FieldTypeChecker.isSwitchField(item)" v-model="tableDataForm[key]"
-                            :disabled="!SacManage.has_auth_edit_field(item)" inline-prompt size="large"
-                            :active-text="item.relative_list?.[1]" :inactive-text="item.relative_list?.[0]"
-                            :active-value="1" :inactive-value="0" />
-
-                        <!-- 富文本编辑器 -->
-                        <template v-else-if="FieldTypeChecker.isRichTextField(item)">
-                            <p>
-                                <Editor v-model="tableDataForm[key]" ref="editorRef" @html="handleHtml($event, key)"
-                                    @change="editorChangeHandle(key)" :placeholder="item.placeholder_search" />
-                                <!-- 富文本查看源码弹窗 -->
-                                <el-dialog v-model="viewEditorDataDialogVisible" title="富文本源码" width="800">
-                                    <el-input v-model="tableDataForm[key]" type="textarea"
-                                        :autosize="{ minRows: 30 }" />
-                                </el-dialog>
-                            </p>
-                        </template>
-
-                        <!-- 文件上传 -->
-                        <template v-else-if="FieldTypeChecker.isFileUploadField(item)">
-                            <!-- 多文件上传 -->
-                            <div v-if="!!item.relative_multiple">
-                                <el-upload v-model:file-list="uploadFileList[key]" multiple :on-preview="handlePreview"
-                                    :http-request="uploadHandlerMultiple(key)" :on-remove="handleRemove(key)"
-                                    :on-success="(response, file) => handleAvatarSuccess(response, file, key)">
-                                    <el-button type="primary">上传</el-button>
-                                </el-upload>
-                            </div>
-
-                            <!-- 单文件上传 -->
-                            <TceUpload v-else v-model:model-value="tableDataForm[key]" :req-params="{
-                                table_name: tableData.table_name,
-                                field_name: item.my_column_name,
-                                fileType: item.my_data_type == 'video' ? '.mp4' : (item.unknown_file_accept?.includes('excel') ? '.xlsx,.xls' : item.my_data_type)
-                            }" :disabled="!SacManage.has_auth_edit_field(item)" />
-                        </template>
-
-                        <!-- 弹框选择 -->
-                        <template v-else-if="FieldTypeChecker.isPopupField(item)">
-                            <div class="flex">
-                                <el-input v-model="tableDataForm[key]" :disabled="!SacManage.has_auth_edit_field(item)"
-                                    :placeholder="item.placeholder_search">
-                                    <!-- 数据回显 -->
-                                    <template #prepend>
-                                        <template v-if="item.relative_col_show">
-                                            <span v-for="showKey in item.relative_col_show.split(',')">
-                                                {{ computedShowValue(item, key, showKey) }}
-                                            </span>
-                                        </template>
-                                        <template v-else>
-                                            {{ computedShowValue(item, key) }}
-                                        </template>
-                                    </template>
-                                    <template #append>
-                                        <el-button type="primary" @click="tableDialogSelectHandle(item)"
-                                            :disabled="!SacManage.has_auth_edit_field(item)">选择</el-button>
-                                    </template>
-                                </el-input>
-                            </div>
-                        </template>
-
-                        <!-- 腾讯坐标 -->
-                        <div v-else-if="FieldTypeChecker.isQqmapLnglatField(item)" class="flex">
-                            <el-input v-model="tableDataForm[key]" :placeholder="item.placeholder_search" />
-                            <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
-                        </div>
-
-                        <!-- 百度坐标 -->
-                        <div v-else-if="FieldTypeChecker.isBdmapLnglatField(item)" class="flex">
-                            <el-input v-model="tableDataForm[key]" :placeholder="item.placeholder_search" />
-                            <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
-                        </div>
-
-                        <!-- 高德坐标 -->
-                        <div v-else-if="FieldTypeChecker.isGdmapLnglatField(item)" class="flex">
-                            <el-input v-model="tableDataForm[key]" :placeholder="item.placeholder_search" />
-                            <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
-                        </div>
-
-                        <!-- 月份选择 -->
-                        <el-date-picker v-else-if="FieldTypeChecker.isMonthField(item)" v-model="tableDataForm[key]"
-                            :disabled="!SacManage.has_auth_edit_field(item)" type="month"
-                            :placeholder="item.placeholder_search || '选择月份'" :format="`YYYY-MM`"
-                            :value-format="`YYYY-MM`" />
-
-                        <!-- auth 字段 -->
-                        <template v-else-if="FieldTypeChecker.isAuthField(item)">
-                            <AuthSelect v-model:value="tableDataForm[key]" />
-                        </template>
-
-                        <!-- 下拉框/单-多选框 -->
-                        <template v-else-if="FieldTypeChecker.isSelectField(item)">
-                            <!-- 下拉选择-异步模糊检索 -->
-                            <template v-if="item.search_field">
-                                <!-- <div>
-                                异步模糊检索
-                                tableDataForm[key]: {{ tableDataForm[key] }}
-                                asyncSearchData[key]: {{ asyncSearchData[key] }}
-                            </div> -->
-                                <el-select v-model="tableDataForm[key]" :multiple="(!!item.relative_multiple)"
-                                    filterable remote reserve-keyword :placeholder="item.placeholder_search || '请输入'"
-                                    :remote-method="remoteMethod(item, key)" :loading="asyncSearchData[key]?.loading"
-                                    style="width: 240px">
-                                    <!-- 数据回显需要，如果 asyncSearchData[key] 为空，则去 tableDataForm[key] 中找 -->
-                                    <!-- 因为 asyncSearchData[key] 是异步搜索的数据 -->
-                                    <template v-if="asyncSearchData[key]">
-                                        <el-option v-for="(item2, index2) in asyncSearchData[key]" :key="index2"
-                                            :label="item2.name" :value="item2.id" />
-                                    </template>
-                                    <template v-else>
-                                        <!-- value绑定值判断是因为 多选框的值是数组，单选框的值是字符串， 否则回显异常-->
-                                        <el-option v-for="(item2, index2) in Object.entries(item.relative_list)"
-                                            :key="+item2[0] + index2" :label="item2[1]"
-                                            :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
-                                    </template>
-                                    <!-- 请求动画 -->
-                                    <template #loading>
-                                        <svg class="circular" viewBox="0 0 50 50">
-                                            <circle class="path" cx="25" cy="25" r="20" fill="none" />
-                                        </svg>
-                                    </template>
-                                </el-select>
-                            </template>
-                            <template v-else>
-                                <!-- 下拉框 -->
-                                <el-select v-if="Object.entries(item.relative_list).length > 10"
-                                    :disabled="!SacManage.has_auth_edit_field(item)"
-                                    :multiple="(!!item.relative_multiple)" v-model="tableDataForm[key]" clearable
-                                    class="input-width" :placeholder="item.placeholder_search || '请选择'">
-                                    <el-option v-if="item.relative_list"
-                                        @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
-                                        v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
-                                        :label="item2[1]" :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
-                                </el-select>
-                                <template v-else>
-                                    <!-- 多选框组 -->
-                                    <el-checkbox-group v-if="(!!item.relative_multiple)" v-model="tableDataForm[key]"
-                                        :disabled="!SacManage.has_auth_edit_field(item)" size="default"
-                                        :placeholder="item.placeholder_search || '请选择'">
-                                        <el-checkbox-button v-for="(item2, index) in Object.entries(item.relative_list)"
-                                            :key="index" :label="item2[0]">
-                                            {{ item2[1] }}
-                                        </el-checkbox-button>
-                                    </el-checkbox-group>
-                                    <!-- 单选框组 -->
-                                    <el-radio-group v-else v-model="tableDataForm[key]" size="default"
-                                        :disabled="!SacManage.has_auth_edit_field(item)"
-                                        :placeholder="item.placeholder_search || '请选择'">
-                                        <el-radio-button v-if="item.relative_list"
-                                            @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
-                                            v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
-                                            :label="item2[0]">{{ item2[1] }}</el-radio-button>
-                                    </el-radio-group>
-                                </template>
-                            </template>
-                        </template>
-
-                        <!-- 多行文本域 -->
-                        <el-input v-else-if="FieldTypeChecker.isTextareaField(item) == 3" v-model="tableDataForm[key]"
-                            :disabled="!SacManage.has_auth_edit_field(item)" style="width: 100%"
-                            :placeholder="item.placeholder_search || '请输入'" show-word-limit type="textarea" />
-
-                        <!-- 默认整行输入框 -->
-                        <el-input v-else :disabled="!SacManage.has_auth_edit_field(item) || item.my_column_name == 'id'"
-                            v-model="tableDataForm[key]" :placeholder="item.placeholder_search || '请输入'" />
-                        <!-- 描述 0普通管理员 1开发者 2超级管理员 -->
-                        <!-- <template v-if="userStore.userInfo?.auth_role == 1 || userStore.userInfo?.auth_role == 2"> -->
-                        <template v-if="(userStore.userInfo?.auth_role == 1) || (item?.vi_des_enabled)">
-                            <span v-if="item.vi_des" v-html="item.vi_des" class="text-xs text-gray font-italic"></span>
-                        </template>
-                    </el-form-item>
-                </template>
-            </el-form>
-        </template>
-        <!-- 多个表单 -->
-        <el-tabs v-else v-model="activeTab" type="border-card">
-            <el-tab-pane v-for="(fields, tag) in groupedFields" :key="tag" :label="tag">
-                <el-form :model="tableDataForm" v-loading="loading" :rules="rules" ref="tableFormEl"
-                    label-width="180px">
-                    <template v-for="(item, key) in fields" :key="key">
+    <!-- vue 总报警：Failed to resolve component: ContentWrap -->
+    <!-- <ContentWrap v-loading="loading"> -->
+        <div v-loading="loading">
+            <div class="pb5" v-if="showBack">
+                <el-button :type="'default'" @click="router.back()">返回上一级</el-button>
+            </div>
+    
+            <!-- 单个表单 -->
+            <template v-if="Object.keys(groupedFields).length == 1">
+                <el-form :model="tableDataForm" v-loading="loading" :rules="rules" ref="tableFormEl" label-width="150px">
+                    <template v-for="(item, key) in Object.values(groupedFields)[0]" :key="key">
                         <!-- unknown_file_accept 条件渲染表单项 -->
                         <transition name="fade">
                             <template
                                 v-if="key == 'unknown_file_accept' && tableDataForm['my_data_type'] == 'unknown_file'">
                                 <el-form-item :label="item.vi_name" :prop="key" class="w-[90%]">
-                                    <el-input v-model="tableDataForm[key]" class="input-width"
-                                        :placeholder="item.placeholder_search || '请输入'" />
+                                    <el-input v-model="tableDataForm[key]" class="input-width" />
                                     <span v-if="item.vi_des" v-html="item.vi_des"
                                         class="text-xs text-gray font-italic"></span>
                                 </el-form-item>
                             </template>
                         </transition>
-                        <el-form-item :label="item.vi_name" :prop="key" class="w-[90%]"
-                            v-if="key != 'unknown_file_accept'">
-                            <!-- 日期选择器 :disabled="isEditable(item.auth)" -->
+                        <el-form-item :label="item.vi_name" :prop="key" v-if="key != 'unknown_file_accept'">
+                            <!-- 日期选择器 -->
                             <el-date-picker v-if="FieldTypeChecker.isDateField(item)" :type="item.my_column_type"
-                                :disabled="!SacManage.has_auth_edit_field(item)"
+                                :disabled="!SacManage.has_auth_edit_field(item)" range-separator="-"
+                                :start-placeholder="item.placeholder_search?.split(',')[0]"
+                                :end-placeholder="item.placeholder_search?.split(',')[1]"
                                 :format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
                                 :value-format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
-                                :disabled-date="(time) => time.getTime() < Date.now() - 8.64e7"
-                                v-model="tableDataForm[key]" class="input-width"
-                                :placeholder="item.placeholder_search || '请选择'" />
-
+                                :disabled-date="(time) => time.getTime() < Date.now() - 8.64e7" v-model="tableDataForm[key]"
+                                class="input-width" />
+    
                             <!-- 头像/图片上传 -->
                             <template v-else-if="FieldTypeChecker.isAvatarField(item)">
                                 <!-- 多个图片上传 {{ item.relative_multiple }} -->
                                 <el-upload v-if="item.relative_multiple" class="upload-multiple"
-                                    :disabled="!SacManage.has_auth_edit_field(item)"
                                     v-model:file-list="uploadFileList[key]" list-type="picture"
-                                    :on-remove="handleRemove(key)"
-                                    :http-request="createUploadHandler(item.my_column_name)" multiple
-                                    :on-preview="handlePreview"
+                                    :on-remove="handleRemove(key)" :http-request="createUploadHandler(item.my_column_name)"
+                                    multiple :on-preview="handlePreview"
                                     :on-success="(response, file) => handleAvatarSuccess(response, file, key)"
-                                    :before-upload="imageUploadCheck(key)" accept="image/png,image/jpg,image/jpeg,.svg">
+                                    :before-upload="beforeAvatarUpload" accept="image/png,image/jpg,image/jpeg,.svg">
                                     <el-button type="primary">上传</el-button>
                                 </el-upload>
-
+    
                                 <!-- 单个图片上传 -->
-                                <el-upload v-else class="avatar-uploader"
-                                    :disabled="!SacManage.has_auth_edit_field(item)"
+                                <el-upload v-else class="avatar-uploader" :disabled="!SacManage.has_auth_edit_field(item)"
                                     :http-request="createUploadHandler(item.my_column_name)" :show-file-list="false"
                                     :on-success="(response, file) => handleAvatarSuccess(response, file, key)"
                                     :before-upload="beforeAvatarUpload" accept="image/png,image/jpg,image/jpeg,.svg">
@@ -288,19 +57,18 @@
                                     </el-icon>
                                 </el-upload>
                             </template>
-
+    
                             <!-- switch 切换 -->
                             <el-switch v-else-if="FieldTypeChecker.isSwitchField(item)" v-model="tableDataForm[key]"
                                 :disabled="!SacManage.has_auth_edit_field(item)" inline-prompt size="large"
                                 :active-text="item.relative_list?.[1]" :inactive-text="item.relative_list?.[0]"
                                 :active-value="1" :inactive-value="0" />
-
+    
                             <!-- 富文本编辑器 -->
                             <template v-else-if="FieldTypeChecker.isRichTextField(item)">
                                 <p>
                                     <Editor v-model="tableDataForm[key]" ref="editorRef" @html="handleHtml($event, key)"
-                                        @change="editorChangeHandle(key)"
-                                        :placeholder="item.placeholder_search || '请输入'" />
+                                        @change="editorChangeHandle(key)" :placeholder="item.placeholder_search" />
                                     <!-- 富文本查看源码弹窗 -->
                                     <el-dialog v-model="viewEditorDataDialogVisible" title="富文本源码" width="800">
                                         <el-input v-model="tableDataForm[key]" type="textarea"
@@ -308,18 +76,18 @@
                                     </el-dialog>
                                 </p>
                             </template>
-
+    
                             <!-- 文件上传 -->
                             <template v-else-if="FieldTypeChecker.isFileUploadField(item)">
                                 <!-- 多文件上传 -->
                                 <div v-if="!!item.relative_multiple">
-                                    <el-upload v-model:file-list="uploadFileList[key]" multiple
-                                        :on-preview="handlePreview" :disabled="!SacManage.has_auth_edit_field(item)"
+                                    <el-upload v-model:file-list="uploadFileList[key]" multiple :on-preview="handlePreview"
                                         :http-request="uploadHandlerMultiple(key)" :on-remove="handleRemove(key)"
                                         :on-success="(response, file) => handleAvatarSuccess(response, file, key)">
                                         <el-button type="primary">上传</el-button>
                                     </el-upload>
                                 </div>
+    
                                 <!-- 单文件上传 -->
                                 <TceUpload v-else v-model:model-value="tableDataForm[key]" :req-params="{
                                     table_name: tableData.table_name,
@@ -327,65 +95,73 @@
                                     fileType: item.my_data_type == 'video' ? '.mp4' : (item.unknown_file_accept?.includes('excel') ? '.xlsx,.xls' : item.my_data_type)
                                 }" :disabled="!SacManage.has_auth_edit_field(item)" />
                             </template>
+    
                             <!-- 弹框选择 -->
                             <template v-else-if="FieldTypeChecker.isPopupField(item)">
                                 <div class="flex">
-                                    <el-input v-model="tableDataForm[key]"
-                                        :placeholder="item.placeholder_search || '请选择'"
-                                        :disabled="!SacManage.has_auth_edit_field(item)">
+                                    <el-input v-model="tableDataForm[key]" :disabled="!SacManage.has_auth_edit_field(item)"
+                                        :placeholder="item.placeholder_search">
                                         <!-- 数据回显 -->
-                                        <template #prepend v-if="!!item.relative_col_show">
-                                            <span v-for="showKey in item.relative_col_show?.split(',')">
-                                                {{ computedShowValue(item, key, showKey) }}
-                                            </span>
-                                        </template>
-                                        <template #prepend v-else>
-                                            {{ computedShowValue(item, key) }}
+                                        <template #prepend>
+                                            <template v-if="item.relative_col_show">
+                                                <span v-for="showKey in item.relative_col_show.split(',')">
+                                                    {{ computedShowValue(item, key, showKey) }}
+                                                </span>
+                                            </template>
+                                            <template v-else>
+                                                {{ computedShowValue(item, key) }}
+                                            </template>
                                         </template>
                                         <template #append>
-                                            <el-button :disabled="!SacManage.has_auth_edit_field(item)"
-                                                @click="tableDialogSelectHandle(item)" type="primary">选择</el-button>
+                                            <el-button type="primary" @click="tableDialogSelectHandle(item)"
+                                                :disabled="!SacManage.has_auth_edit_field(item)">选择</el-button>
                                         </template>
                                     </el-input>
                                 </div>
                             </template>
+    
                             <!-- 腾讯坐标 -->
                             <div v-else-if="FieldTypeChecker.isQqmapLnglatField(item)" class="flex">
-                                <el-input v-model="tableDataForm[key]"
-                                    :placeholder="item.placeholder_search || '请输入'" />
+                                <el-input v-model="tableDataForm[key]" :placeholder="item.placeholder_search" />
                                 <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
                             </div>
+    
                             <!-- 百度坐标 -->
                             <div v-else-if="FieldTypeChecker.isBdmapLnglatField(item)" class="flex">
-                                <el-input v-model="tableDataForm[key]"
-                                    :placeholder="item.placeholder_search || '请输入'" />
+                                <el-input v-model="tableDataForm[key]" :placeholder="item.placeholder_search" />
                                 <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
                             </div>
+    
                             <!-- 高德坐标 -->
                             <div v-else-if="FieldTypeChecker.isGdmapLnglatField(item)" class="flex">
-                                <el-input v-model="tableDataForm[key]"
-                                    :placeholder="item.placeholder_search || '请输入'" />
+                                <el-input v-model="tableDataForm[key]" :placeholder="item.placeholder_search" />
                                 <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
                             </div>
+    
                             <!-- 月份选择 -->
                             <el-date-picker v-else-if="FieldTypeChecker.isMonthField(item)" v-model="tableDataForm[key]"
                                 :disabled="!SacManage.has_auth_edit_field(item)" type="month"
                                 :placeholder="item.placeholder_search || '选择月份'" :format="`YYYY-MM`"
                                 :value-format="`YYYY-MM`" />
+    
                             <!-- auth 字段 -->
                             <template v-else-if="FieldTypeChecker.isAuthField(item)">
                                 <AuthSelect v-model:value="tableDataForm[key]" />
                             </template>
-
+    
                             <!-- 下拉框/单-多选框 -->
                             <template v-else-if="FieldTypeChecker.isSelectField(item)">
                                 <!-- 下拉选择-异步模糊检索 -->
                                 <template v-if="item.search_field">
+                                    <!-- <div>
+                                    异步模糊检索
+                                    tableDataForm[key]: {{ tableDataForm[key] }}
+                                    asyncSearchData[key]: {{ asyncSearchData[key] }}
+                                </div> -->
                                     <el-select v-model="tableDataForm[key]" :multiple="(!!item.relative_multiple)"
-                                        filterable remote reserve-keyword
-                                        :placeholder="item.placeholder_search || '请输入'"
-                                        :remote-method="remoteMethod(item, key)"
-                                        :loading="asyncSearchData[key]?.loading" style="width: 240px">
+                                        filterable remote reserve-keyword :placeholder="item.placeholder_search || '请输入'"
+                                        :remote-method="remoteMethod(item, key)" :loading="asyncSearchData[key]?.loading"
+                                        style="width: 240px">
                                         <!-- 数据回显需要，如果 asyncSearchData[key] 为空，则去 tableDataForm[key] 中找 -->
                                         <!-- 因为 asyncSearchData[key] 是异步搜索的数据 -->
                                         <template v-if="asyncSearchData[key]">
@@ -409,24 +185,20 @@
                                 <template v-else>
                                     <!-- 下拉框 -->
                                     <el-select v-if="Object.entries(item.relative_list).length > 10"
-                                        :placeholder="item.placeholder_search || '不限'"
                                         :disabled="!SacManage.has_auth_edit_field(item)"
                                         :multiple="(!!item.relative_multiple)" v-model="tableDataForm[key]" clearable
-                                        class="input-width">
+                                        class="input-width" :placeholder="item.placeholder_search || '请选择'">
                                         <el-option v-if="item.relative_list"
                                             @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
                                             v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
-                                            :label="item2[1]"
-                                            :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
+                                            :label="item2[1]" :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
                                     </el-select>
                                     <template v-else>
                                         <!-- 多选框组 -->
-                                        <el-checkbox-group v-if="(!!item.relative_multiple)"
-                                            v-model="tableDataForm[key]"
+                                        <el-checkbox-group v-if="(!!item.relative_multiple)" v-model="tableDataForm[key]"
                                             :disabled="!SacManage.has_auth_edit_field(item)" size="default"
-                                            :placeholder="item.placeholder_search">
-                                            <el-checkbox-button
-                                                v-for="(item2, index) in Object.entries(item.relative_list)"
+                                            :placeholder="item.placeholder_search || '请选择'">
+                                            <el-checkbox-button v-for="(item2, index) in Object.entries(item.relative_list)"
                                                 :key="index" :label="item2[0]">
                                                 {{ item2[1] }}
                                             </el-checkbox-button>
@@ -434,45 +206,276 @@
                                         <!-- 单选框组 -->
                                         <el-radio-group v-else v-model="tableDataForm[key]" size="default"
                                             :disabled="!SacManage.has_auth_edit_field(item)"
-                                            :placeholder="item.placeholder_search">
+                                            :placeholder="item.placeholder_search || '请选择'">
                                             <el-radio-button v-if="item.relative_list"
                                                 @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
-                                                v-for="(item2, index) in Object.entries(item.relative_list)"
-                                                :key="index" :label="item2[0]">{{ item2[1] }}</el-radio-button>
+                                                v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
+                                                :label="item2[0]">{{ item2[1] }}</el-radio-button>
                                         </el-radio-group>
                                     </template>
                                 </template>
                             </template>
-
+    
                             <!-- 多行文本域 -->
-                            <el-input v-else-if="FieldTypeChecker.isTextareaField(item) == 3"
-                                v-model="tableDataForm[key]" :disabled="!SacManage.has_auth_edit_field(item)"
-                                style="width: 100%" :placeholder="item.placeholder_search || '请输入'" show-word-limit
-                                type="textarea" />
-
+                            <el-input v-else-if="FieldTypeChecker.isTextareaField(item) == 3" v-model="tableDataForm[key]"
+                                :disabled="!SacManage.has_auth_edit_field(item)" style="width: 100%"
+                                :placeholder="item.placeholder_search || '请输入'" show-word-limit type="textarea" />
+    
                             <!-- 默认整行输入框 -->
-                            <el-input v-else
-                                :disabled="!SacManage.has_auth_edit_field(item) || item.my_column_name == 'id'"
+                            <el-input v-else :disabled="!SacManage.has_auth_edit_field(item) || item.my_column_name == 'id'"
                                 v-model="tableDataForm[key]" :placeholder="item.placeholder_search || '请输入'" />
                             <!-- 描述 0普通管理员 1开发者 2超级管理员 -->
                             <!-- <template v-if="userStore.userInfo?.auth_role == 1 || userStore.userInfo?.auth_role == 2"> -->
                             <template v-if="(userStore.userInfo?.auth_role == 1) || (item?.vi_des_enabled)">
-                                <span v-if="item.vi_des" v-html="item.vi_des"
-                                    class="text-xs text-gray font-italic"></span>
+                                <span v-if="item.vi_des" v-html="item.vi_des" class="text-xs text-gray font-italic"></span>
                             </template>
                         </el-form-item>
                     </template>
                 </el-form>
-
-            </el-tab-pane>
-        </el-tabs>
-
-        <!-- 提交按钮 -->
-        <div class="pt5">
-            <el-button type="primary" @click="handleSubmit(false)" v-if="!isEdit">提交并继续</el-button>
-            <el-button type="primary" @click="handleSubmit(true)">提交</el-button>
+            </template>
+            <!-- 多个表单 -->
+            <el-tabs v-else v-model="activeTab" type="border-card">
+                <el-tab-pane v-for="(fields, tag) in groupedFields" :key="tag" :label="tag">
+                    <el-form :model="tableDataForm" v-loading="loading" :rules="rules" ref="tableFormEl"
+                        label-width="180px">
+                        <template v-for="(item, key) in fields" :key="key">
+                            <!-- unknown_file_accept 条件渲染表单项 -->
+                            <transition name="fade">
+                                <template
+                                    v-if="key == 'unknown_file_accept' && tableDataForm['my_data_type'] == 'unknown_file'">
+                                    <el-form-item :label="item.vi_name" :prop="key" class="w-[90%]">
+                                        <el-input v-model="tableDataForm[key]" class="input-width"
+                                            :placeholder="item.placeholder_search || '请输入'" />
+                                        <span v-if="item.vi_des" v-html="item.vi_des"
+                                            class="text-xs text-gray font-italic"></span>
+                                    </el-form-item>
+                                </template>
+                            </transition>
+                            <el-form-item :label="item.vi_name" :prop="key" class="w-[90%]"
+                                v-if="key != 'unknown_file_accept'">
+                                <!-- 日期选择器 :disabled="isEditable(item.auth)" -->
+                                <el-date-picker v-if="FieldTypeChecker.isDateField(item)" :type="item.my_column_type"
+                                    :disabled="!SacManage.has_auth_edit_field(item)"
+                                    :format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                                    :value-format="`YYYY-MM-DD ${item.my_column_type == 'date' ? '' : 'HH:mm:ss'}`"
+                                    :disabled-date="(time) => time.getTime() < Date.now() - 8.64e7"
+                                    v-model="tableDataForm[key]" class="input-width"
+                                    :placeholder="item.placeholder_search || '请选择'" />
+    
+                                <!-- 头像/图片上传 -->
+                                <template v-else-if="FieldTypeChecker.isAvatarField(item)">
+                                    <!-- 多个图片上传 {{ item.relative_multiple }} -->
+                                    <el-upload v-if="item.relative_multiple" class="upload-multiple"
+                                        :disabled="!SacManage.has_auth_edit_field(item)"
+                                        v-model:file-list="uploadFileList[key]" list-type="picture"
+                                        :on-remove="handleRemove(key)"
+                                        :http-request="createUploadHandler(item.my_column_name)" multiple
+                                        :on-preview="handlePreview"
+                                        :on-success="(response, file) => handleAvatarSuccess(response, file, key)"
+                                        :before-upload="imageUploadCheck(key)" accept="image/png,image/jpg,image/jpeg,.svg">
+                                        <el-button type="primary">上传</el-button>
+                                    </el-upload>
+    
+                                    <!-- 单个图片上传 -->
+                                    <el-upload v-else class="avatar-uploader"
+                                        :disabled="!SacManage.has_auth_edit_field(item)"
+                                        :http-request="createUploadHandler(item.my_column_name)" :show-file-list="false"
+                                        :on-success="(response, file) => handleAvatarSuccess(response, file, key)"
+                                        :before-upload="beforeAvatarUpload" accept="image/png,image/jpg,image/jpeg,.svg">
+                                        <img v-if="tableDataForm[key]"
+                                            :src="getFullImageUrl(tableDataForm[key + '_imageUrl'] || tableDataForm[key])"
+                                            class="avatar" />
+                                        <el-icon v-else class="avatar-uploader-icon">
+                                            <Plus />
+                                        </el-icon>
+                                    </el-upload>
+                                </template>
+    
+                                <!-- switch 切换 -->
+                                <el-switch v-else-if="FieldTypeChecker.isSwitchField(item)" v-model="tableDataForm[key]"
+                                    :disabled="!SacManage.has_auth_edit_field(item)" inline-prompt size="large"
+                                    :active-text="item.relative_list?.[1]" :inactive-text="item.relative_list?.[0]"
+                                    :active-value="1" :inactive-value="0" />
+    
+                                <!-- 富文本编辑器 -->
+                                <template v-else-if="FieldTypeChecker.isRichTextField(item)">
+                                    <p>
+                                        <Editor v-model="tableDataForm[key]" ref="editorRef" @html="handleHtml($event, key)"
+                                            @change="editorChangeHandle(key)"
+                                            :placeholder="item.placeholder_search || '请输入'" />
+                                        <!-- 富文本查看源码弹窗 -->
+                                        <el-dialog v-model="viewEditorDataDialogVisible" title="富文本源码" width="800">
+                                            <el-input v-model="tableDataForm[key]" type="textarea"
+                                                :autosize="{ minRows: 30 }" />
+                                        </el-dialog>
+                                    </p>
+                                </template>
+    
+                                <!-- 文件上传 -->
+                                <template v-else-if="FieldTypeChecker.isFileUploadField(item)">
+                                    <!-- 多文件上传 -->
+                                    <div v-if="!!item.relative_multiple">
+                                        <el-upload v-model:file-list="uploadFileList[key]" multiple
+                                            :on-preview="handlePreview" :disabled="!SacManage.has_auth_edit_field(item)"
+                                            :http-request="uploadHandlerMultiple(key)" :on-remove="handleRemove(key)"
+                                            :on-success="(response, file) => handleAvatarSuccess(response, file, key)">
+                                            <el-button type="primary">上传</el-button>
+                                        </el-upload>
+                                    </div>
+                                    <!-- 单文件上传 -->
+                                    <TceUpload v-else v-model:model-value="tableDataForm[key]" :req-params="{
+                                        table_name: tableData.table_name,
+                                        field_name: item.my_column_name,
+                                        fileType: item.my_data_type == 'video' ? '.mp4' : (item.unknown_file_accept?.includes('excel') ? '.xlsx,.xls' : item.my_data_type)
+                                    }" :disabled="!SacManage.has_auth_edit_field(item)" />
+                                </template>
+                                <!-- 弹框选择 -->
+                                <template v-else-if="FieldTypeChecker.isPopupField(item)">
+                                    <div class="flex">
+                                        <el-input v-model="tableDataForm[key]"
+                                            :placeholder="item.placeholder_search || '请选择'"
+                                            :disabled="!SacManage.has_auth_edit_field(item)">
+                                            <!-- 数据回显 -->
+                                            <template #prepend v-if="!!item.relative_col_show">
+                                                <span v-for="showKey in item.relative_col_show?.split(',')">
+                                                    {{ computedShowValue(item, key, showKey) }}
+                                                </span>
+                                            </template>
+                                            <template #prepend v-else>
+                                                {{ computedShowValue(item, key) }}
+                                            </template>
+                                            <template #append>
+                                                <el-button :disabled="!SacManage.has_auth_edit_field(item)"
+                                                    @click="tableDialogSelectHandle(item)" type="primary">选择</el-button>
+                                            </template>
+                                        </el-input>
+                                    </div>
+                                </template>
+                                <!-- 腾讯坐标 -->
+                                <div v-else-if="FieldTypeChecker.isQqmapLnglatField(item)" class="flex">
+                                    <el-input v-model="tableDataForm[key]"
+                                        :placeholder="item.placeholder_search || '请输入'" />
+                                    <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
+                                </div>
+                                <!-- 百度坐标 -->
+                                <div v-else-if="FieldTypeChecker.isBdmapLnglatField(item)" class="flex">
+                                    <el-input v-model="tableDataForm[key]"
+                                        :placeholder="item.placeholder_search || '请输入'" />
+                                    <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
+                                </div>
+                                <!-- 高德坐标 -->
+                                <div v-else-if="FieldTypeChecker.isGdmapLnglatField(item)" class="flex">
+                                    <el-input v-model="tableDataForm[key]"
+                                        :placeholder="item.placeholder_search || '请输入'" />
+                                    <el-button type="primary" :icon="MapLocation" @click="handleGotoMap(item)" />
+                                </div>
+                                <!-- 月份选择 -->
+                                <el-date-picker v-else-if="FieldTypeChecker.isMonthField(item)" v-model="tableDataForm[key]"
+                                    :disabled="!SacManage.has_auth_edit_field(item)" type="month"
+                                    :placeholder="item.placeholder_search || '选择月份'" :format="`YYYY-MM`"
+                                    :value-format="`YYYY-MM`" />
+                                <!-- auth 字段 -->
+                                <template v-else-if="FieldTypeChecker.isAuthField(item)">
+                                    <AuthSelect v-model:value="tableDataForm[key]" />
+                                </template>
+    
+                                <!-- 下拉框/单-多选框 -->
+                                <template v-else-if="FieldTypeChecker.isSelectField(item)">
+                                    <!-- 下拉选择-异步模糊检索 -->
+                                    <template v-if="item.search_field">
+                                        <el-select v-model="tableDataForm[key]" :multiple="(!!item.relative_multiple)"
+                                            filterable remote reserve-keyword
+                                            :placeholder="item.placeholder_search || '请输入'"
+                                            :remote-method="remoteMethod(item, key)"
+                                            :loading="asyncSearchData[key]?.loading" style="width: 240px">
+                                            <!-- 数据回显需要，如果 asyncSearchData[key] 为空，则去 tableDataForm[key] 中找 -->
+                                            <!-- 因为 asyncSearchData[key] 是异步搜索的数据 -->
+                                            <template v-if="asyncSearchData[key]">
+                                                <el-option v-for="(item2, index2) in asyncSearchData[key]" :key="index2"
+                                                    :label="item2.name" :value="item2.id" />
+                                            </template>
+                                            <template v-else>
+                                                <!-- value绑定值判断是因为 多选框的值是数组，单选框的值是字符串， 否则回显异常-->
+                                                <el-option v-for="(item2, index2) in Object.entries(item.relative_list)"
+                                                    :key="+item2[0] + index2" :label="item2[1]"
+                                                    :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
+                                            </template>
+                                            <!-- 请求动画 -->
+                                            <template #loading>
+                                                <svg class="circular" viewBox="0 0 50 50">
+                                                    <circle class="path" cx="25" cy="25" r="20" fill="none" />
+                                                </svg>
+                                            </template>
+                                        </el-select>
+                                    </template>
+                                    <template v-else>
+                                        <!-- 下拉框 -->
+                                        <el-select v-if="Object.entries(item.relative_list).length > 10"
+                                            :placeholder="item.placeholder_search || '不限'"
+                                            :disabled="!SacManage.has_auth_edit_field(item)"
+                                            :multiple="(!!item.relative_multiple)" v-model="tableDataForm[key]" clearable
+                                            class="input-width">
+                                            <el-option v-if="item.relative_list"
+                                                @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
+                                                v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
+                                                :label="item2[1]"
+                                                :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
+                                        </el-select>
+                                        <template v-else>
+                                            <!-- 多选框组 -->
+                                            <el-checkbox-group v-if="(!!item.relative_multiple)"
+                                                v-model="tableDataForm[key]"
+                                                :disabled="!SacManage.has_auth_edit_field(item)" size="default"
+                                                :placeholder="item.placeholder_search">
+                                                <el-checkbox-button
+                                                    v-for="(item2, index) in Object.entries(item.relative_list)"
+                                                    :key="index" :label="item2[0]">
+                                                    {{ item2[1] }}
+                                                </el-checkbox-button>
+                                            </el-checkbox-group>
+                                            <!-- 单选框组 -->
+                                            <el-radio-group v-else v-model="tableDataForm[key]" size="default"
+                                                :disabled="!SacManage.has_auth_edit_field(item)"
+                                                :placeholder="item.placeholder_search">
+                                                <el-radio-button v-if="item.relative_list"
+                                                    @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
+                                                    v-for="(item2, index) in Object.entries(item.relative_list)"
+                                                    :key="index" :label="item2[0]">{{ item2[1] }}</el-radio-button>
+                                            </el-radio-group>
+                                        </template>
+                                    </template>
+                                </template>
+    
+                                <!-- 多行文本域 -->
+                                <el-input v-else-if="FieldTypeChecker.isTextareaField(item) == 3"
+                                    v-model="tableDataForm[key]" :disabled="!SacManage.has_auth_edit_field(item)"
+                                    style="width: 100%" :placeholder="item.placeholder_search || '请输入'" show-word-limit
+                                    type="textarea" />
+    
+                                <!-- 默认整行输入框 -->
+                                <el-input v-else
+                                    :disabled="!SacManage.has_auth_edit_field(item) || item.my_column_name == 'id'"
+                                    v-model="tableDataForm[key]" :placeholder="item.placeholder_search || '请输入'" />
+                                <!-- 描述 0普通管理员 1开发者 2超级管理员 -->
+                                <!-- <template v-if="userStore.userInfo?.auth_role == 1 || userStore.userInfo?.auth_role == 2"> -->
+                                <template v-if="(userStore.userInfo?.auth_role == 1) || (item?.vi_des_enabled)">
+                                    <span v-if="item.vi_des" v-html="item.vi_des"
+                                        class="text-xs text-gray font-italic"></span>
+                                </template>
+                            </el-form-item>
+                        </template>
+                    </el-form>
+    
+                </el-tab-pane>
+            </el-tabs>
+    
+            <!-- 提交按钮 -->
+            <div class="pt5">
+                <el-button type="primary" @click="handleSubmit(false)" v-if="!isEdit">提交并继续</el-button>
+                <el-button type="primary" @click="handleSubmit(true)">提交</el-button>
+            </div>
         </div>
-    </ContentWrap>
+    <!-- </ContentWrap> -->
 
     <!-- 弹框选择 -->
     <DialogSelect v-model="dataDialogVisible" :title="tableSelectData?.table?.table_name_cn + '选择'" />

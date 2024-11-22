@@ -584,14 +584,14 @@ const tableSortField = ref();
 
 
 getTableData()
-// getTableColWidth() // 这里调用时还没有表名  [在获取数据完成后调用]
+// getTableColWidth() // 这里调用时还没有表名  [应在获取数据完成后调用]
 // onMounted(() => {
 //     getTableColWidth()
 // })
 
 
 
-// 获取表格列宽度 [public/table-col.json]
+// 获取表格列宽度 [public/table-col.json] or 本地存储
 function getTableColWidth() {
     // 读取本地文件的方式
     // tableColWidth.value = await getExternalFileValue()
@@ -1009,7 +1009,6 @@ async function batchDelHandler(cmdData: any) {
 async function tableCMD_MainReloadHandler(cmdData: any) {
     // appStore.getFormIsOpen // 是否是弹窗的方式打开表单
     console.log(cmdData);
-
 
     // 回到 /admin 页让 determinePageType 判断页面类型进行跳转
     router.push({

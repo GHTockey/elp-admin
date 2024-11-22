@@ -9,6 +9,7 @@
     <TablePage v-if="pageType == 'table'" />
     <CmdPage v-else-if="pageType == 'cmd'"></CmdPage>
     <InfoListPage v-else-if="pageType == 'enum'"></InfoListPage>
+    <FormPage v-else-if="pageType == 'form'"></FormPage>
   </div>
 </template>
 
@@ -19,6 +20,7 @@ import { useRoute } from 'vue-router';
 import TablePage from "../Table/Table.vue";
 import InfoListPage from "../InfoListPage/InfoListPage.vue";
 import CmdPage from "../CmdPage/CmdPage.vue";
+import FormPage from "@/views/Form/EditForm.vue";
 import { determinePageType } from '@/utils';
 import router from '@/router';
 import request from '@/axios';
@@ -43,11 +45,11 @@ const pageType = ref<'table' | 'cmd' | 'enum' | 'form' | 'unknown'>();
     pageType.value = await determinePageType(queryParams, uriData.value) as 'table' | 'cmd' | 'enum' | 'form' | 'unknown';
     console.log('页面类型:', pageType.value, uriData.value?.form_load_view_file);
     // 如果是 form 类型，则跳转
-    if (pageType.value == 'form') {
-      router.push(`/form/edit?uri=${queryParams}`);
-    } else if (pageType.value == 'unknown') {
-      router.push('/unknownPage');
-    }
+    // if (pageType.value == 'form') {
+    //   router.push(`/form/edit?uri=${queryParams}`);
+    // } else if (pageType.value == 'unknown') {
+    //   router.push('/unknownPage');
+    // }
   } else {
     console.log('没有 query.url');
     /**
