@@ -1,14 +1,13 @@
 <template>
     <!-- vue 总报警：Failed to resolve component: ContentWrap -->
     <!-- <ContentWrap v-loading="loading"> -->
-        <div v-loading="loading">
             <div class="pb5" v-if="showBack">
                 <el-button :type="'default'" @click="router.back()">返回上一级</el-button>
             </div>
     
             <!-- 单个表单 -->
             <template v-if="Object.keys(groupedFields).length == 1">
-                <el-form :model="tableDataForm" v-loading="loading" :rules="rules" ref="tableFormEl" label-width="150px">
+                <el-form :model="tableDataForm" v-loading="loading" :rules="rules" ref="tableFormEl" label-width="150px" @keyup.enter="handleSubmit">
                     <template v-for="(item, key) in Object.values(groupedFields)[0]" :key="key">
                         <!-- unknown_file_accept 条件渲染表单项 -->
                         <transition name="fade">
@@ -234,10 +233,10 @@
                 </el-form>
             </template>
             <!-- 多个表单 -->
-            <el-tabs v-else v-model="activeTab" type="border-card">
+            <el-tabs v-else v-model="activeTab" type="border-card" v-loading="loading">
                 <el-tab-pane v-for="(fields, tag) in groupedFields" :key="tag" :label="tag">
-                    <el-form :model="tableDataForm" v-loading="loading" :rules="rules" ref="tableFormEl"
-                        label-width="180px">
+                    <el-form :model="tableDataForm" :rules="rules" ref="tableFormEl" label-width="180px"
+                        @keyup.enter="handleSubmit">
                         <template v-for="(item, key) in fields" :key="key">
                             <!-- unknown_file_accept 条件渲染表单项 -->
                             <transition name="fade">
@@ -474,7 +473,6 @@
                 <el-button type="primary" @click="handleSubmit(false)" v-if="!isEdit">提交并继续</el-button>
                 <el-button type="primary" @click="handleSubmit(true)">提交</el-button>
             </div>
-        </div>
     <!-- </ContentWrap> -->
 
     <!-- 弹框选择 -->

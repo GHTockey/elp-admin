@@ -55,7 +55,7 @@ const pageType = ref<'table' | 'cmd' | 'enum' | 'form' | 'unknown'>();
     /**
      * 如果存在 redirectedFrom 参数，则跳转到该参数指定的路径
      * 因为登录之后需要重定向至原页面，vue-router 的 route.query 此时是不包含手动拼接的 query 参数的，
-     * 但是在 redirectedFrom 是包含的
+     * 但是在 redirectedFrom 可以拿到完整的 url
      * @date 2024/11/20
      * @author lixiaosong
      */

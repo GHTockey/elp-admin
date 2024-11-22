@@ -1,8 +1,8 @@
 <script setup lang="tsx">
-import { reactive, ref, watch, onMounted, unref } from 'vue';
+import { reactive, ref, watch, onMounted, unref, getCurrentInstance } from 'vue';
 import { Form, FormSchema } from '@/components/Form';
 import { useI18n } from '@/hooks/web/useI18n';
-import { ElCheckbox, ElLink } from 'element-plus';
+import { ElCheckbox, ElLink, ElNotification } from 'element-plus';
 import { useForm } from '@/hooks/web/useForm';
 import { loginApi, getTestRoleApi, getAdminRoleApi } from '@/api/login';
 import { useAppStore } from '@/store/modules/app';
@@ -20,6 +20,7 @@ import { navsDataTransform, objToFormData } from '@/utils';
 import request from '@/axios';
 import router from '@/router';
 
+// const vm = getCurrentInstance()
 
 const { required } = useValidator()
 
@@ -278,6 +279,12 @@ const signIn = async () => {
             router.push('/')
           }
 
+          ElNotification({
+            title: res.msg,
+            message: '欢迎回来 ' + formData.username,
+            type: 'success',
+          })
+
           // // 是否使用动态路由
           // if (appStore.getDynamicRouter) {
           //   console.log('使用动态路由')
@@ -353,6 +360,6 @@ const toRegister = () => {
 </script>
 
 <template>
-  <Form :schema="schema" :rules="rules" label-position="top" hide-required-asterisk size="large"
+  <Form :schema="schema" :rules="rules" label-position="top" hide-required-asterisk size="large" @keyup.enter="signIn"
     class="dark:(border-1 border-[var(--el-border-color)] border-solid)" @register="formRegister" />
 </template>
