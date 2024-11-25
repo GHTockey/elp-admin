@@ -1,7 +1,7 @@
 <template>
     <Dialog v-model="internalValue" :title="title" style="min-width: 800px;" >
         <!-- 这里可以添加具体的搜索条件表单内容 -->
-        <TableComponent />
+        <TableComponent :tableSelectDataReception="tableSelectDataReception" />
     </Dialog>
 </template>
 
@@ -14,7 +14,7 @@ const props = defineProps({
     modelValue: Boolean,
     title: String,
     // idFieldName: String,
-    // tableData: Object,
+    tableSelectDataReception: Object,
 });
 
 const emit = defineEmits(['update:modelValue']);
