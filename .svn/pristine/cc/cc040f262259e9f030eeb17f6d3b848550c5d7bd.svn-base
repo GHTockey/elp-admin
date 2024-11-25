@@ -234,7 +234,7 @@
                                                 style="width: 100%; margin-right: 10px;" alt="icon" />
                                         </el-icon>
                                     </template>
-                                    {{ item.cmd_cn }}-{{ item.cmd_type }}
+                                    {{ item.cmd_cn }}
                                 </ElButton>
                                 <!-- <ElButton v-else type="" :icon="useIcon({ icon: item.icon })">{{ item.cmd_cn
                                     }}-{{ item.cmd_type }}

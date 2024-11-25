@@ -182,7 +182,7 @@
                                     </el-select>
                                 </template>
                                 <template v-else>
-                                    <!-- 下拉框 回显用:value="(!!item.relative_multiple) ? item2[0] : +item2[0]" -->
+                                    <!-- 下拉框 -->
                                     <el-select v-if="Object.entries(item.relative_list).length > 10"
                                         :disabled="!SacManage.has_auth_edit_field(item)"
                                         :multiple="(!!item.relative_multiple)" v-model="tableDataForm[key]" clearable
@@ -190,7 +190,7 @@
                                         <el-option v-if="item.relative_list"
                                             @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
                                             v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
-                                            :label="item2[1]" :value="item2[0]" />
+                                            :label="item2[1]" :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
                                     </el-select>
                                     <template v-else>
                                         <!-- 多选框组 -->
@@ -199,7 +199,7 @@
                                             :placeholder="item.placeholder_search || '请选择'">
                                             <el-checkbox-button v-for="(item2, index) in Object.entries(item.relative_list)"
                                                 :key="index" :label="item2[0]">
-                                                {{ item2[1] || '&nbsp;' }}
+                                                {{ item2[1] }}
                                             </el-checkbox-button>
                                         </el-checkbox-group>
                                         <!-- 单选框组 -->
@@ -209,7 +209,7 @@
                                             <el-radio-button v-if="item.relative_list"
                                                 @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
                                                 v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
-                                                :label="item2[0]">{{ item2[1] || '&nbsp;' }}</el-radio-button>
+                                                :label="item2[0]">{{ item2[1] }}</el-radio-button>
                                         </el-radio-group>
                                     </template>
                                 </template>
@@ -417,7 +417,8 @@
                                             <el-option v-if="item.relative_list"
                                                 @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
                                                 v-for="(item2, index) in Object.entries(item.relative_list)" :key="index"
-                                                :label="item2[1]" :value="item2[0]" />
+                                                :label="item2[1]"
+                                                :value="(!!item.relative_multiple) ? item2[0] : +item2[0]" />
                                         </el-select>
                                         <template v-else>
                                             <!-- 多选框组 -->
@@ -428,7 +429,7 @@
                                                 <el-checkbox-button
                                                     v-for="(item2, index) in Object.entries(item.relative_list)"
                                                     :key="index" :label="item2[0]">
-                                                    {{ item2[1] || '&nbsp;' }}
+                                                    {{ item2[1] }}
                                                 </el-checkbox-button>
                                             </el-checkbox-group>
                                             <!-- 单选框组 -->
@@ -438,7 +439,7 @@
                                                 <el-radio-button v-if="item.relative_list"
                                                     @click="key == 'my_data_type' ? inferFieldType(item2[0]) : null"
                                                     v-for="(item2, index) in Object.entries(item.relative_list)"
-                                                    :key="index" :label="item2[0]">{{ item2[1] || '&nbsp;' }}</el-radio-button>
+                                                    :key="index" :label="item2[0]">{{ item2[1] }}</el-radio-button>
                                             </el-radio-group>
                                         </template>
                                     </template>
@@ -617,7 +618,7 @@ function editorChangeHandle(key: string) {
     // console.log('editorChangeHandle', key);
     // 去除所有空格 
     // 只去除文本节点中的空格
-    // tableDataForm.value[key] = tableDataForm.value[key].replace(/>(\s+)</g, '><').replace(/\s{2,}/g, ' ');
+    tableDataForm.value[key] = tableDataForm.value[key].replace(/>(\s+)</g, '><').replace(/\s{2,}/g, ' ');
 }
 
 // 模糊检索获取数据

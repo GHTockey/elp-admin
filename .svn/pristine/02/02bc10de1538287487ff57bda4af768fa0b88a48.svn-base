@@ -441,9 +441,6 @@ export function fileToBinary(file: File): Promise<ArrayBuffer> {
 export function getFullImageUrl(imageUrl) {
   // console.log(imageUrl, 'imageUrl');
   if (typeof imageUrl != 'string') return '';
-  // 如果是纯数字，直接返回
-  if (/^\d+$/.test(imageUrl)) return '';
-
   // 如果imageUrl是绝对路径 则直接返回
   if (imageUrl.startsWith('http') || imageUrl.startsWith('blob') || imageUrl.startsWith('data:image')) {
     return imageUrl;
